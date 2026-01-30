@@ -1,0 +1,567 @@
+openapi: 3.1.0
+info:
+  title: Text2SQL Agent API
+  description: 자연어를 SQL 쿼리로 변환하고 실행하는 Agent API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+paths:
+  /chat:
+    post:
+      summary: 새로운 질문 전송
+      description: |
+        자연어 질문을 전송하고 SQL 쿼리 생성을 시작합니다.
+        Server-Sent Events를 통해 진행 상황을 스트리밍합니다.
+      operationId: sendChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: SSE 스트림 시작
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatStreamEvent'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: 요청 제한 초과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat/confirm:
+    post:
+      summary: 쿼리 실행 확인
+      description: |
+        생성된 쿼리의 실행을 승인하거나 취소합니다.
+        Human-in-the-Loop 단계에서 사용됩니다.
+      operationId: confirmQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmationRequest'
+      responses:
+        '200':
+          description: 확인 처리 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 세션 또는 쿼리를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /session:
+    post:
+      summary: 새 세션 생성
+      description: 새로운 대화 세션을 생성합니다.
+      operationId: createSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: 세션 생성됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+
+  /session/{sessionId}:
+    get:
+      summary: 세션 정보 조회
+      description: 세션의 현재 상태와 대화 기록을 조회합니다.
+      operationId: getSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 세션 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          description: 세션을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: 세션 종료
+      description: 대화 세션을 종료하고 관련 데이터를 정리합니다.
+      operationId: terminateSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 세션 종료됨
+        '404':
+          description: 세션을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schema:
+    get:
+      summary: 데이터베이스 스키마 조회
+      description: 사용 가능한 테이블과 컬럼 목록을 조회합니다.
+      operationId: getDatabaseSchema
+      responses:
+        '200':
+          description: 스키마 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseSchemaResponse'
+
+    post:
+      summary: 스키마 캐시 갱신
+      description: 데이터베이스 스키마 캐시를 강제로 갱신합니다.
+      operationId: refreshSchema
+      responses:
+        '200':
+          description: 스키마 갱신됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseSchemaResponse'
+
+  /health:
+    get:
+      summary: 헬스 체크
+      description: 서비스 및 의존성 상태를 확인합니다.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 서비스 정상
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: 서비스 불가
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          description: 기존 세션 ID (없으면 새 세션 생성)
+        message:
+          type: string
+          minLength: 2
+          maxLength: 1000
+          description: 사용자의 자연어 질문
+          example: "지난달 매출 상위 10개 제품이 뭐야?"
+        llmProvider:
+          type: string
+          enum: [openai, anthropic, google]
+          default: openai
+          description: 사용할 LLM 제공자
+
+    ChatStreamEvent:
+      oneOf:
+        - $ref: '#/components/schemas/SessionEvent'
+        - $ref: '#/components/schemas/StatusEvent'
+        - $ref: '#/components/schemas/QueryPreviewEvent'
+        - $ref: '#/components/schemas/ConfirmRequiredEvent'
+        - $ref: '#/components/schemas/ResultEvent'
+        - $ref: '#/components/schemas/ErrorEvent'
+        - $ref: '#/components/schemas/DoneEvent'
+
+    SessionEvent:
+      type: object
+      required:
+        - type
+        - sessionId
+      properties:
+        type:
+          type: string
+          const: session
+        sessionId:
+          type: string
+          format: uuid
+
+    StatusEvent:
+      type: object
+      required:
+        - type
+        - status
+      properties:
+        type:
+          type: string
+          const: status
+        status:
+          type: string
+          enum: [pending, generating, validating, awaiting_confirm, executing, completed, failed, cancelled]
+        message:
+          type: string
+          description: 상태 관련 메시지 (한국어)
+
+    QueryPreviewEvent:
+      type: object
+      required:
+        - type
+        - query
+        - explanation
+      properties:
+        type:
+          type: string
+          const: query_preview
+        query:
+          type: string
+          description: 생성된 SQL 쿼리
+        explanation:
+          type: string
+          description: 쿼리에 대한 한국어 설명
+
+    ConfirmRequiredEvent:
+      type: object
+      required:
+        - type
+        - queryId
+      properties:
+        type:
+          type: string
+          const: confirm_required
+        queryId:
+          type: string
+          format: uuid
+          description: 확인이 필요한 쿼리 ID
+
+    ResultEvent:
+      type: object
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          const: result
+        data:
+          $ref: '#/components/schemas/QueryResult'
+
+    ErrorEvent:
+      type: object
+      required:
+        - type
+        - error
+      properties:
+        type:
+          type: string
+          const: error
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+              description: 사용자 친화적 에러 메시지 (한국어)
+
+    DoneEvent:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: done
+
+    ConfirmationRequest:
+      type: object
+      required:
+        - sessionId
+        - queryId
+        - approved
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        queryId:
+          type: string
+          format: uuid
+        approved:
+          type: boolean
+          description: true=실행 승인, false=취소
+
+    ConfirmationResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+        result:
+          $ref: '#/components/schemas/QueryResult'
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    QueryResult:
+      type: object
+      required:
+        - rows
+        - totalRowCount
+        - returnedRowCount
+        - columns
+        - isTruncated
+        - executionTimeMs
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          maxItems: 10000
+        totalRowCount:
+          type: integer
+          minimum: 0
+        returnedRowCount:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnInfo'
+        isTruncated:
+          type: boolean
+          description: 결과가 10,000행 제한으로 잘린 경우 true
+        executionTimeMs:
+          type: integer
+          minimum: 0
+          description: 쿼리 실행 시간 (밀리초)
+
+    ColumnInfo:
+      type: object
+      required:
+        - name
+        - dataType
+        - isNullable
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+        isNullable:
+          type: boolean
+
+    CreateSessionRequest:
+      type: object
+      properties:
+        llmProvider:
+          type: string
+          enum: [openai, anthropic, google]
+          default: openai
+
+    SessionResponse:
+      type: object
+      required:
+        - sessionId
+        - status
+        - createdAt
+        - lastActivityAt
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, expired, terminated]
+        llmProvider:
+          type: string
+          enum: [openai, anthropic, google]
+        createdAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+        messageHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          maxItems: 10
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+        - timestamp
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    DatabaseSchemaResponse:
+      type: object
+      required:
+        - version
+        - lastUpdatedAt
+        - tables
+      properties:
+        version:
+          type: string
+        lastUpdatedAt:
+          type: string
+          format: date-time
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableInfo'
+
+    TableInfo:
+      type: object
+      required:
+        - name
+        - columns
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaColumnInfo'
+        estimatedRowCount:
+          type: integer
+
+    SchemaColumnInfo:
+      type: object
+      required:
+        - name
+        - dataType
+        - isNullable
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+        isNullable:
+          type: boolean
+        description:
+          type: string
+          nullable: true
+        isPrimaryKey:
+          type: boolean
+        foreignKeyReference:
+          type: object
+          nullable: true
+          properties:
+            referencedTable:
+              type: string
+            referencedColumn:
+              type: string
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        dependencies:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+            llm:
+              type: string
+              enum: [ok, error]
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: 에러 코드
+              example: DANGEROUS_QUERY
+            message:
+              type: string
+              description: 사용자 친화적 에러 메시지 (한국어)
+              example: 조회 요청만 가능합니다. 데이터 수정은 지원되지 않습니다.
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT 토큰 (향후 인증 구현 시 사용)
