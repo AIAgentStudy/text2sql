@@ -1,0 +1,29 @@
+# Text2SQL Agent - Python 의존성
+# Python 3.11+ 필요
+
+# === LangGraph / LangChain ===
+langgraph==0.2.61
+langchain==0.3.14
+langchain-core==0.3.28
+langchain-openai==0.2.14
+langchain-anthropic==0.3.0
+langchain-google-genai==2.0.8
+
+# === 웹 프레임워크 ===
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+sse-starlette==2.2.1
+
+# === 데이터베이스 ===
+asyncpg==0.30.0
+
+# === 데이터 검증 ===
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# === 유틸리티 ===
+python-dotenv==1.0.1
+httpx==0.28.1
+
+# === 개발 도구 (선택사항) ===
+# pip install -r requirements-dev.txt 로 별도 설치
