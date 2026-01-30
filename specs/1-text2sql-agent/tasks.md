@@ -1,304 +1,304 @@
-# Tasks: Text2SQL Agent
+# 작업 목록: Text2SQL Agent
 
-**Input**: Design documents from `/specs/1-text2sql-agent/`
-**Prerequisites**: plan.md (✓), spec.md (✓), research.md (✓), data-model.md (✓), contracts/api.yaml (✓)
+**입력**: `/specs/1-text2sql-agent/` 디렉토리의 설계 문서들
+**필수 문서**: plan.md (✓), spec.md (✓), research.md (✓), data-model.md (✓), contracts/api.yaml (✓)
 
-**Tests**: Tests are included for critical paths (security validation, API contracts).
+**테스트**: 핵심 경로(보안 검증, API 계약)에 대한 테스트가 포함되어 있습니다.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**구성**: 각 사용자 스토리별로 독립적인 구현과 테스트가 가능하도록 작업이 그룹화되어 있습니다.
 
-## Format: `[ID] [P?] [Story] Description`
+## 형식: `[ID] [P?] [Story] 설명`
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
+- **[P]**: 병렬 실행 가능 (다른 파일, 의존성 없음)
+- **[Story]**: 해당 작업이 속한 사용자 스토리 (예: US1, US2, US3)
+- 설명에 정확한 파일 경로 포함
 
-## Path Conventions
+## 경로 규칙
 
-- **Web app structure**: `backend/src/app/`, `frontend/src/`
-- Based on plan.md project structure
-
----
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Project initialization and basic structure
-
-- [ ] T001 Create backend project structure per implementation plan (`backend/src/app/` with agent/, llm/, database/, validation/, session/, api/, models/, errors/ directories)
-- [ ] T002 Initialize Python project with pyproject.toml (Python 3.11+, dependencies: langgraph, langchain, fastapi, asyncpg, pydantic)
-- [ ] T003 [P] Create requirements.txt with pinned versions from plan.md dependencies
-- [ ] T004 [P] Configure ruff for linting and formatting (pyproject.toml)
-- [ ] T005 [P] Configure mypy with strict mode (pyproject.toml or mypy.ini)
-- [ ] T006 [P] Create .env.example with required environment variables (DATABASE_URL, OPENAI_API_KEY, etc.)
-- [ ] T007 [P] Create frontend project structure per implementation plan (`frontend/src/` with components/, hooks/, services/, types/)
-- [ ] T008 [P] Initialize frontend project with package.json (React 18, @tanstack/react-query, tailwindcss, vite)
+- **웹 앱 구조**: `backend/src/app/`, `frontend/src/`
+- plan.md의 프로젝트 구조 기반
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## 1단계: 설정 (공유 인프라) ✅
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**목적**: 프로젝트 초기화 및 기본 구조 생성
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
-
-- [ ] T009 Implement configuration management with Pydantic Settings in `backend/src/app/config.py`
-- [ ] T010 [P] Create base Pydantic models for API schemas in `backend/src/app/models/entities.py` (Message, ConversationSession, QueryRequest, GeneratedQuery, QueryResult, DatabaseSchema)
-- [ ] T011 [P] Create API request/response models in `backend/src/app/models/requests.py` and `backend/src/app/models/responses.py`
-- [ ] T012 [P] Define custom exception classes in `backend/src/app/errors/exceptions.py` (Text2SQLError, DangerousQueryError, QueryTimeoutError, ValidationError, SchemaNotFoundError)
-- [ ] T013 [P] Implement error handlers for FastAPI in `backend/src/app/errors/handlers.py`
-- [ ] T014 Implement asyncpg connection pool in `backend/src/app/database/connection.py`
-- [ ] T015 Create database schema extraction from information_schema in `backend/src/app/database/schema.py`
-- [ ] T016 [P] Define LangGraph agent state (TypedDict) in `backend/src/app/agent/state.py`
-- [ ] T017 Create LLM protocol and factory pattern in `backend/src/app/llm/base.py` and `backend/src/app/llm/factory.py`
-- [ ] T018 [P] Implement OpenAI LLM provider in `backend/src/app/llm/openai.py`
-- [ ] T019 [P] Implement Anthropic LLM provider in `backend/src/app/llm/anthropic.py`
-- [ ] T020 [P] Implement Google LLM provider in `backend/src/app/llm/google.py`
-- [ ] T021 Create FastAPI app entry point with CORS and middleware in `backend/src/app/main.py`
-- [ ] T022 [P] Create health check endpoint in `backend/src/app/api/routes/health.py`
-- [ ] T023 Setup pytest configuration in `backend/tests/conftest.py` with async fixtures
-
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+- [x] T001 plan.md에 따라 백엔드 프로젝트 구조 생성 (`backend/src/app/` 하위에 agent/, llm/, database/, validation/, session/, api/, models/, errors/ 디렉토리)
+- [x] T002 pyproject.toml로 Python 프로젝트 초기화 (Python 3.11+, 의존성: langgraph, langchain, fastapi, asyncpg, pydantic)
+- [x] T003 [P] plan.md 의존성 목록 기반 requirements.txt 생성 (버전 고정)
+- [x] T004 [P] ruff 린팅 및 포매팅 설정 (pyproject.toml)
+- [x] T005 [P] mypy strict 모드 설정 (pyproject.toml 또는 mypy.ini)
+- [x] T006 [P] 필수 환경 변수가 포함된 .env.example 생성 (DATABASE_URL, OPENAI_API_KEY 등)
+- [x] T007 [P] plan.md에 따라 프론트엔드 프로젝트 구조 생성 (`frontend/src/` 하위에 components/, hooks/, services/, types/)
+- [x] T008 [P] package.json으로 프론트엔드 프로젝트 초기화 (React 18, @tanstack/react-query, tailwindcss, vite)
 
 ---
 
-## Phase 3: User Story 1 - 자연어 질문으로 데이터 조회하기 (Priority: P1) 🎯 MVP
+## 2단계: 기반 작업 (필수 선행 조건) ✅
 
-**Goal**: 비개발자가 자연어로 질문하면 SQL 쿼리를 생성하고 결과를 표시
+**목적**: 모든 사용자 스토리 구현 전에 반드시 완료해야 하는 핵심 인프라
 
-**Independent Test**: "지난달 매출 상위 10개 제품이 뭐야?" 입력 시 쿼리 생성 및 결과 반환 확인
+**⚠️ 중요**: 이 단계가 완료되기 전까지 사용자 스토리 작업을 시작할 수 없습니다
 
-### Tests for User Story 1
+- [x] T009 `backend/src/app/config.py`에 Pydantic Settings로 설정 관리 구현
+- [x] T010 [P] `backend/src/app/models/entities.py`에 API 스키마용 기본 Pydantic 모델 생성 (Message, ConversationSession, QueryRequest, GeneratedQuery, QueryResult, DatabaseSchema)
+- [x] T011 [P] `backend/src/app/models/requests.py`와 `backend/src/app/models/responses.py`에 API 요청/응답 모델 생성
+- [x] T012 [P] `backend/src/app/errors/exceptions.py`에 커스텀 예외 클래스 정의 (Text2SQLError, DangerousQueryError, QueryTimeoutError, ValidationError, SchemaNotFoundError)
+- [x] T013 [P] `backend/src/app/errors/handlers.py`에 FastAPI용 에러 핸들러 구현
+- [x] T014 `backend/src/app/database/connection.py`에 asyncpg 연결 풀 구현
+- [x] T015 `backend/src/app/database/schema.py`에 information_schema에서 데이터베이스 스키마 추출 기능 생성
+- [x] T016 [P] `backend/src/app/agent/state.py`에 LangGraph 에이전트 상태 정의 (TypedDict)
+- [x] T017 `backend/src/app/llm/base.py`와 `backend/src/app/llm/factory.py`에 LLM 프로토콜 및 팩토리 패턴 생성
+- [x] T018 [P] `backend/src/app/llm/openai.py`에 OpenAI LLM 프로바이더 구현
+- [x] T019 [P] `backend/src/app/llm/anthropic.py`에 Anthropic LLM 프로바이더 구현
+- [x] T020 [P] `backend/src/app/llm/google.py`에 Google LLM 프로바이더 구현
+- [x] T021 `backend/src/app/main.py`에 CORS 및 미들웨어가 포함된 FastAPI 앱 엔트리포인트 생성
+- [x] T022 [P] `backend/src/app/api/routes/health.py`에 헬스 체크 엔드포인트 생성
+- [x] T023 `backend/tests/conftest.py`에 비동기 fixture가 포함된 pytest 설정
 
-- [ ] T024 [P] [US1] Contract test for POST /api/chat endpoint in `backend/tests/contract/test_chat_api.py`
-- [ ] T025 [P] [US1] Integration test for query generation flow in `backend/tests/integration/test_query_generation.py`
-
-### Implementation for User Story 1
-
-- [ ] T026 [US1] Implement schema retrieval node in `backend/src/app/agent/nodes/schema_retrieval.py`
-- [ ] T027 [US1] Implement query generation node with LLM in `backend/src/app/agent/nodes/query_generation.py`
-- [ ] T028 [US1] Implement query execution node in `backend/src/app/agent/nodes/query_execution.py`
-- [ ] T029 [US1] Implement safe query executor in `backend/src/app/database/executor.py` (READ ONLY transaction, timeout, row limit)
-- [ ] T030 [US1] Implement response formatting node in `backend/src/app/agent/nodes/response_formatting.py`
-- [ ] T031 [US1] Build LangGraph workflow in `backend/src/app/agent/graph.py` (schema → generation → execution → formatting)
-- [ ] T032 [US1] Implement session manager with MemorySaver checkpointer in `backend/src/app/session/manager.py`
-- [ ] T033 [US1] Implement chat endpoint with SSE streaming in `backend/src/app/api/routes/chat.py`
-- [ ] T034 [US1] Create FastAPI dependencies for DB pool and LLM in `backend/src/app/api/dependencies.py`
-
-**Checkpoint**: User Story 1 should be fully functional - natural language queries can be converted to SQL and executed
-
----
-
-## Phase 4: User Story 2 - 위험한 쿼리 차단 (Priority: P1) 🎯 MVP
-
-**Goal**: UPDATE, DELETE, DROP 등 데이터 변경 쿼리를 100% 차단
-
-**Independent Test**: "고객 정보를 삭제해줘" 입력 시 차단 메시지 확인
-
-### Tests for User Story 2
-
-- [ ] T035 [P] [US2] Unit test for keyword validator with all dangerous keywords in `backend/tests/unit/test_keyword_validator.py`
-- [ ] T036 [P] [US2] Unit test for schema validator in `backend/tests/unit/test_schema_validator.py`
-- [ ] T037 [P] [US2] Integration test for dangerous query blocking in `backend/tests/integration/test_dangerous_query_blocking.py`
-
-### Implementation for User Story 2
-
-- [ ] T038 [US2] Implement Layer 1 keyword-based safety validator in `backend/src/app/validation/keyword_validator.py` (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
-- [ ] T039 [US2] Implement Layer 2 schema validation in `backend/src/app/validation/schema_validator.py` (table/column existence check)
-- [ ] T040 [US2] Implement Layer 3 LLM semantic validator in `backend/src/app/validation/semantic_validator.py`
-- [ ] T041 [US2] Implement query validation node in `backend/src/app/agent/nodes/query_validation.py` (3-layer progressive validation)
-- [ ] T042 [US2] Update LangGraph workflow to include validation node with retry logic (max 3 attempts) in `backend/src/app/agent/graph.py`
-
-**Checkpoint**: User Story 2 should be fully functional - all dangerous queries are blocked with user-friendly messages
+**체크포인트**: 기반 작업 완료 - 이제 사용자 스토리 구현을 병렬로 시작할 수 있습니다
 
 ---
 
-## Phase 5: User Story 3 - 쿼리 검증 및 결과 미리보기 (Priority: P2)
+## 3단계: 사용자 스토리 1 - 자연어 질문으로 데이터 조회하기 (우선순위: P1) 🎯 MVP ✅
 
-**Goal**: 쿼리 실행 전 사용자 확인을 받는 Human-in-the-Loop 구현
+**목표**: 비개발자가 자연어로 질문하면 SQL 쿼리를 생성하고 결과를 표시
 
-**Independent Test**: 질문 후 쿼리와 설명이 표시되고, 확인/취소 버튼으로 제어 가능한지 확인
+**독립 테스트**: "지난달 매출 상위 10개 제품이 뭐야?" 입력 시 쿼리 생성 및 결과 반환 확인
 
-### Tests for User Story 3
+### 사용자 스토리 1 테스트
 
-- [ ] T043 [P] [US3] Contract test for POST /api/chat/confirm endpoint in `backend/tests/contract/test_confirm_api.py`
-- [ ] T044 [P] [US3] Integration test for Human-in-the-Loop flow in `backend/tests/integration/test_human_in_loop.py`
+- [x] T024 [P] [US1] `backend/tests/contract/test_chat_api.py`에 POST /api/chat 엔드포인트 계약 테스트
+- [x] T025 [P] [US1] `backend/tests/integration/test_query_generation.py`에 쿼리 생성 흐름 통합 테스트
 
-### Implementation for User Story 3
+### 사용자 스토리 1 구현
 
-- [ ] T045 [US3] Implement user confirmation node with LangGraph interrupt() in `backend/src/app/agent/nodes/user_confirmation.py`
-- [ ] T046 [US3] Update LangGraph workflow to include confirmation interrupt after validation in `backend/src/app/agent/graph.py`
-- [ ] T047 [US3] Implement confirmation endpoint with Command(resume) in `backend/src/app/api/routes/chat.py`
-- [ ] T048 [US3] Add query explanation generation (Korean) in query generation node
-- [ ] T049 [P] [US3] Implement QueryPreview component in `frontend/src/components/Chat/QueryPreview.tsx`
-- [ ] T050 [P] [US3] Implement confirmation buttons (실행/취소) in QueryPreview component
+- [x] T026 [US1] `backend/src/app/agent/nodes/schema_retrieval.py`에 스키마 조회 노드 구현
+- [x] T027 [US1] `backend/src/app/agent/nodes/query_generation.py`에 LLM을 사용한 쿼리 생성 노드 구현
+- [x] T028 [US1] `backend/src/app/agent/nodes/query_execution.py`에 쿼리 실행 노드 구현
+- [x] T029 [US1] `backend/src/app/database/executor.py`에 안전한 쿼리 실행기 구현 (READ ONLY 트랜잭션, 타임아웃, 행 제한)
+- [x] T030 [US1] `backend/src/app/agent/nodes/response_formatting.py`에 응답 포맷팅 노드 구현
+- [x] T031 [US1] `backend/src/app/agent/graph.py`에 LangGraph 워크플로우 구축 (스키마 → 생성 → 실행 → 포맷팅)
+- [x] T032 [US1] `backend/src/app/session/manager.py`에 MemorySaver 체크포인터가 포함된 세션 관리자 구현
+- [x] T033 [US1] `backend/src/app/api/routes/chat.py`에 SSE 스트리밍이 포함된 채팅 엔드포인트 구현
+- [x] T034 [US1] `backend/src/app/api/dependencies.py`에 DB 풀 및 LLM용 FastAPI 의존성 생성
 
-**Checkpoint**: User Story 3 should be fully functional - users can preview and approve queries before execution
-
----
-
-## Phase 6: User Story 4 - 오류 상황 안내 (Priority: P2)
-
-**Goal**: 모든 오류 상황에서 비개발자가 이해할 수 있는 한국어 안내 메시지 제공
-
-**Independent Test**: 모호한 질문, DB 연결 오류, 빈 결과 등에서 친절한 메시지 표시 확인
-
-### Tests for User Story 4
-
-- [ ] T051 [P] [US4] Unit test for error message generation in `backend/tests/unit/test_error_messages.py`
-- [ ] T052 [P] [US4] Integration test for error scenarios in `backend/tests/integration/test_error_handling.py`
-
-### Implementation for User Story 4
-
-- [ ] T053 [US4] Define Korean error message templates for all error codes in `backend/src/app/errors/messages.py`
-- [ ] T054 [US4] Implement ambiguous query detection and helpful suggestions in query generation node
-- [ ] T055 [US4] Handle database connection errors with user-friendly messages
-- [ ] T056 [US4] Handle empty result set with appropriate message ("조건에 맞는 데이터가 없습니다")
-- [ ] T057 [US4] Handle query timeout with suggestion to add more specific conditions
-- [ ] T058 [P] [US4] Implement ErrorMessage component in `frontend/src/components/common/ErrorMessage.tsx`
-
-**Checkpoint**: User Story 4 should be fully functional - all errors show user-friendly Korean messages
+**체크포인트**: 사용자 스토리 1 완전 동작 - 자연어 질문을 SQL로 변환하고 실행 가능
 
 ---
 
-## Phase 7: User Story 5 - 대화 맥락 유지 (Priority: P3)
+## 4단계: 사용자 스토리 2 - 위험한 쿼리 차단 (우선순위: P1) 🎯 MVP
 
-**Goal**: 연속 질문에서 이전 대화 맥락을 유지
+**목표**: UPDATE, DELETE, DROP 등 데이터 변경 쿼리를 100% 차단
 
-**Independent Test**: "지난달 매출 보여줘" → "그중에 서울 지역만" 연속 질문이 정상 동작하는지 확인
+**독립 테스트**: "고객 정보를 삭제해줘" 입력 시 차단 메시지 확인
 
-### Tests for User Story 5
+### 사용자 스토리 2 테스트
 
-- [ ] T059 [P] [US5] Integration test for context-aware queries in `backend/tests/integration/test_conversation_context.py`
+- [ ] T035 [P] [US2] `backend/tests/unit/test_keyword_validator.py`에 모든 위험 키워드에 대한 키워드 검증기 단위 테스트
+- [ ] T036 [P] [US2] `backend/tests/unit/test_schema_validator.py`에 스키마 검증기 단위 테스트
+- [ ] T037 [P] [US2] `backend/tests/integration/test_dangerous_query_blocking.py`에 위험 쿼리 차단 통합 테스트
 
-### Implementation for User Story 5
+### 사용자 스토리 2 구현
 
-- [ ] T060 [US5] Implement message history management with add_messages reducer in agent state
-- [ ] T061 [US5] Enhance query generation prompt to include conversation context
-- [ ] T062 [US5] Implement context reference detection (e.g., "그중에", "거기서") in `backend/src/app/agent/nodes/query_generation.py`
-- [ ] T063 [US5] Implement session reset on "처음부터 다시" command
-- [ ] T064 [US5] Add session timeout handling (30분) in session manager
+- [ ] T038 [US2] `backend/src/app/validation/keyword_validator.py`에 1단계 키워드 기반 안전 검증기 구현 (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
+- [ ] T039 [US2] `backend/src/app/validation/schema_validator.py`에 2단계 스키마 검증 구현 (테이블/컬럼 존재 확인)
+- [ ] T040 [US2] `backend/src/app/validation/semantic_validator.py`에 3단계 LLM 시맨틱 검증기 구현
+- [ ] T041 [US2] `backend/src/app/agent/nodes/query_validation.py`에 쿼리 검증 노드 구현 (3단계 점진적 검증)
+- [ ] T042 [US2] `backend/src/app/agent/graph.py`에 재시도 로직(최대 3회)이 포함된 검증 노드 추가로 LangGraph 워크플로우 업데이트
 
-**Checkpoint**: User Story 5 should be fully functional - users can have contextual conversations
-
----
-
-## Phase 8: Frontend Implementation
-
-**Purpose**: Web chat UI for user interaction
-
-- [ ] T065 [P] Create TypeScript types matching API schemas in `frontend/src/types/index.ts`
-- [ ] T066 [P] Implement API service with SSE support in `frontend/src/services/api.ts`
-- [ ] T067 [P] Create useSession hook in `frontend/src/hooks/useSession.ts`
-- [ ] T068 [P] Create useChat hook with SSE handling in `frontend/src/hooks/useChat.ts`
-- [ ] T069 Implement ChatContainer component in `frontend/src/components/Chat/ChatContainer.tsx`
-- [ ] T070 [P] Implement MessageList component in `frontend/src/components/Chat/MessageList.tsx`
-- [ ] T071 [P] Implement MessageInput component in `frontend/src/components/Chat/MessageInput.tsx`
-- [ ] T072 [P] Implement ResultTable component with pagination in `frontend/src/components/Chat/ResultTable.tsx`
-- [ ] T073 [P] Implement LoadingSpinner component in `frontend/src/components/common/LoadingSpinner.tsx`
-- [ ] T074 Create App.tsx with React Query provider and main layout in `frontend/src/App.tsx`
-- [ ] T075 [P] Configure Tailwind CSS in `frontend/tailwind.config.js`
-- [ ] T076 [P] Configure Vite in `frontend/vite.config.ts`
+**체크포인트**: 사용자 스토리 2 완전 동작 - 모든 위험 쿼리가 사용자 친화적 메시지와 함께 차단됨
 
 ---
 
-## Phase 9: API Endpoints Completion
+## 5단계: 사용자 스토리 3 - 쿼리 검증 및 결과 미리보기 (우선순위: P2)
 
-**Purpose**: Additional API endpoints per OpenAPI contract
+**목표**: 쿼리 실행 전 사용자 확인을 받는 Human-in-the-Loop 구현
 
-- [ ] T077 [P] Implement session creation endpoint in `backend/src/app/api/routes/session.py`
-- [ ] T078 [P] Implement session retrieval endpoint in `backend/src/app/api/routes/session.py`
-- [ ] T079 [P] Implement session termination endpoint in `backend/src/app/api/routes/session.py`
-- [ ] T080 [P] Implement schema retrieval endpoint in `backend/src/app/api/routes/schema.py`
-- [ ] T081 [P] Implement schema refresh endpoint in `backend/src/app/api/routes/schema.py`
-- [ ] T082 Register all routers in main.py
+**독립 테스트**: 질문 후 쿼리와 설명이 표시되고, 확인/취소 버튼으로 제어 가능한지 확인
 
----
+### 사용자 스토리 3 테스트
 
-## Phase 10: Polish & Cross-Cutting Concerns
+- [ ] T043 [P] [US3] `backend/tests/contract/test_confirm_api.py`에 POST /api/chat/confirm 엔드포인트 계약 테스트
+- [ ] T044 [P] [US3] `backend/tests/integration/test_human_in_loop.py`에 Human-in-the-Loop 흐름 통합 테스트
 
-**Purpose**: Improvements that affect multiple user stories
+### 사용자 스토리 3 구현
 
-- [ ] T083 [P] Add logging configuration with structured logging in `backend/src/app/config.py`
-- [ ] T084 [P] Add request logging middleware in `backend/src/app/main.py`
-- [ ] T085 Code cleanup and type annotation verification with mypy
-- [ ] T086 [P] Run ruff linting and formatting on all Python files
-- [ ] T087 [P] Create Dockerfile for backend in `backend/Dockerfile`
-- [ ] T088 [P] Create Dockerfile for frontend in `frontend/Dockerfile`
-- [ ] T089 [P] Create docker-compose.yml for local development
-- [ ] T090 Run quickstart.md validation (verify all steps work)
-- [ ] T091 Security review: verify all SQL queries use parameterized execution
-- [ ] T092 Performance test: verify 10-second response time target
+- [ ] T045 [US3] `backend/src/app/agent/nodes/user_confirmation.py`에 LangGraph interrupt()를 사용한 사용자 확인 노드 구현
+- [ ] T046 [US3] `backend/src/app/agent/graph.py`에 검증 후 확인 interrupt가 포함되도록 LangGraph 워크플로우 업데이트
+- [ ] T047 [US3] `backend/src/app/api/routes/chat.py`에 Command(resume)가 포함된 확인 엔드포인트 구현
+- [ ] T048 [US3] 쿼리 생성 노드에 쿼리 설명 생성 기능 추가 (한국어)
+- [ ] T049 [P] [US3] `frontend/src/components/Chat/QueryPreview.tsx`에 QueryPreview 컴포넌트 구현
+- [ ] T050 [P] [US3] QueryPreview 컴포넌트에 확인 버튼 (실행/취소) 구현
+
+**체크포인트**: 사용자 스토리 3 완전 동작 - 사용자가 쿼리를 실행 전에 미리보고 승인 가능
 
 ---
 
-## Dependencies & Execution Order
+## 6단계: 사용자 스토리 4 - 오류 상황 안내 (우선순위: P2)
 
-### Phase Dependencies
+**목표**: 모든 오류 상황에서 비개발자가 이해할 수 있는 한국어 안내 메시지 제공
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3-7)**: All depend on Foundational phase completion
-  - US1 and US2 (both P1) should be implemented together for MVP
-  - US3 and US4 (both P2) can proceed after P1 stories
-  - US5 (P3) can proceed after P2 stories
-- **Frontend (Phase 8)**: Can start after Foundational (Phase 2), parallel with backend stories
-- **API Endpoints (Phase 9)**: Depends on Foundational (Phase 2)
-- **Polish (Phase 10)**: Depends on all desired user stories being complete
+**독립 테스트**: 모호한 질문, DB 연결 오류, 빈 결과 등에서 친절한 메시지 표시 확인
 
-### User Story Dependencies
+### 사용자 스토리 4 테스트
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - Core query generation
-- **User Story 2 (P1)**: Can start after US1 begins - Adds validation layer to US1 flow
-- **User Story 3 (P2)**: Depends on US1 and US2 - Adds Human-in-the-Loop
-- **User Story 4 (P2)**: Can run parallel with US3 - Independent error handling
-- **User Story 5 (P3)**: Depends on US1 - Extends conversation capability
+- [ ] T051 [P] [US4] `backend/tests/unit/test_error_messages.py`에 에러 메시지 생성 단위 테스트
+- [ ] T052 [P] [US4] `backend/tests/integration/test_error_handling.py`에 오류 시나리오 통합 테스트
 
-### Within Each User Story
+### 사용자 스토리 4 구현
 
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Nodes before graph composition
-- Core implementation before integration
-- Story complete before moving to next priority
+- [ ] T053 [US4] `backend/src/app/errors/messages.py`에 모든 에러 코드에 대한 한국어 에러 메시지 템플릿 정의
+- [ ] T054 [US4] 쿼리 생성 노드에 모호한 쿼리 감지 및 도움말 제안 구현
+- [ ] T055 [US4] 데이터베이스 연결 오류를 사용자 친화적 메시지로 처리
+- [ ] T056 [US4] 빈 결과 집합을 적절한 메시지로 처리 ("조건에 맞는 데이터가 없습니다")
+- [ ] T057 [US4] 쿼리 타임아웃을 더 구체적인 조건 추가 제안과 함께 처리
+- [ ] T058 [P] [US4] `frontend/src/components/common/ErrorMessage.tsx`에 ErrorMessage 컴포넌트 구현
 
-### Parallel Opportunities
-
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- All tests for a user story marked [P] can run in parallel
-- Frontend Phase 8 can run in parallel with backend Phases 3-7
-- Different user stories can be worked on in parallel by different team members
+**체크포인트**: 사용자 스토리 4 완전 동작 - 모든 오류가 사용자 친화적 한국어 메시지로 표시됨
 
 ---
 
-## Implementation Strategy
+## 7단계: 사용자 스토리 5 - 대화 맥락 유지 (우선순위: P3)
 
-### MVP First (User Stories 1 + 2)
+**목표**: 연속 질문에서 이전 대화 맥락을 유지
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1 (Query Generation)
-4. Complete Phase 4: User Story 2 (Security Validation)
-5. **STOP and VALIDATE**: Test end-to-end query flow with dangerous query blocking
-6. Deploy/demo if ready
+**독립 테스트**: "지난달 매출 보여줘" → "그중에 서울 지역만" 연속 질문이 정상 동작하는지 확인
 
-### Incremental Delivery
+### 사용자 스토리 5 테스트
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Stories 1+2 → MVP with security
-3. Add User Story 3 → Human-in-the-Loop confirmation
-4. Add User Story 4 → Complete error handling
-5. Add User Story 5 → Conversation context
-6. Complete Frontend → Full web UI
+- [ ] T059 [P] [US5] `backend/tests/integration/test_conversation_context.py`에 맥락 인식 쿼리 통합 테스트
+
+### 사용자 스토리 5 구현
+
+- [ ] T060 [US5] 에이전트 상태에 add_messages 리듀서를 사용한 메시지 히스토리 관리 구현
+- [ ] T061 [US5] 대화 맥락을 포함하도록 쿼리 생성 프롬프트 개선
+- [ ] T062 [US5] `backend/src/app/agent/nodes/query_generation.py`에 맥락 참조 감지 구현 (예: "그중에", "거기서")
+- [ ] T063 [US5] "처음부터 다시" 명령어에 대한 세션 초기화 구현
+- [ ] T064 [US5] 세션 관리자에 세션 타임아웃 처리 (30분) 추가
+
+**체크포인트**: 사용자 스토리 5 완전 동작 - 사용자가 맥락을 유지하며 대화 가능
 
 ---
 
-## Notes
+## 8단계: 프론트엔드 구현
 
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
+**목적**: 사용자 상호작용을 위한 웹 채팅 UI
+
+- [ ] T065 [P] `frontend/src/types/index.ts`에 API 스키마와 일치하는 TypeScript 타입 생성
+- [ ] T066 [P] `frontend/src/services/api.ts`에 SSE 지원이 포함된 API 서비스 구현
+- [ ] T067 [P] `frontend/src/hooks/useSession.ts`에 useSession 훅 생성
+- [ ] T068 [P] `frontend/src/hooks/useChat.ts`에 SSE 처리가 포함된 useChat 훅 생성
+- [ ] T069 `frontend/src/components/Chat/ChatContainer.tsx`에 ChatContainer 컴포넌트 구현
+- [ ] T070 [P] `frontend/src/components/Chat/MessageList.tsx`에 MessageList 컴포넌트 구현
+- [ ] T071 [P] `frontend/src/components/Chat/MessageInput.tsx`에 MessageInput 컴포넌트 구현
+- [ ] T072 [P] `frontend/src/components/Chat/ResultTable.tsx`에 페이지네이션이 포함된 ResultTable 컴포넌트 구현
+- [ ] T073 [P] `frontend/src/components/common/LoadingSpinner.tsx`에 LoadingSpinner 컴포넌트 구현
+- [ ] T074 `frontend/src/App.tsx`에 React Query 프로바이더와 메인 레이아웃이 포함된 App.tsx 생성
+- [ ] T075 [P] `frontend/tailwind.config.js`에 Tailwind CSS 설정
+- [ ] T076 [P] `frontend/vite.config.ts`에 Vite 설정
+
+---
+
+## 9단계: API 엔드포인트 완성
+
+**목적**: OpenAPI 계약에 따른 추가 API 엔드포인트
+
+- [ ] T077 [P] `backend/src/app/api/routes/session.py`에 세션 생성 엔드포인트 구현
+- [ ] T078 [P] `backend/src/app/api/routes/session.py`에 세션 조회 엔드포인트 구현
+- [ ] T079 [P] `backend/src/app/api/routes/session.py`에 세션 종료 엔드포인트 구현
+- [ ] T080 [P] `backend/src/app/api/routes/schema.py`에 스키마 조회 엔드포인트 구현
+- [ ] T081 [P] `backend/src/app/api/routes/schema.py`에 스키마 갱신 엔드포인트 구현
+- [ ] T082 main.py에 모든 라우터 등록
+
+---
+
+## 10단계: 마무리 및 공통 관심사
+
+**목적**: 여러 사용자 스토리에 영향을 미치는 개선 사항
+
+- [ ] T083 [P] `backend/src/app/config.py`에 구조화된 로깅 설정 추가
+- [ ] T084 [P] `backend/src/app/main.py`에 요청 로깅 미들웨어 추가
+- [ ] T085 mypy로 코드 정리 및 타입 어노테이션 검증
+- [ ] T086 [P] 모든 Python 파일에 ruff 린팅 및 포매팅 실행
+- [ ] T087 [P] `backend/Dockerfile`에 백엔드용 Dockerfile 생성
+- [ ] T088 [P] `frontend/Dockerfile`에 프론트엔드용 Dockerfile 생성
+- [ ] T089 [P] 로컬 개발용 docker-compose.yml 생성
+- [ ] T090 quickstart.md 검증 실행 (모든 단계 동작 확인)
+- [ ] T091 보안 검토: 모든 SQL 쿼리가 파라미터화된 실행을 사용하는지 확인
+- [ ] T092 성능 테스트: 10초 응답 시간 목표 달성 확인
+
+---
+
+## 의존성 및 실행 순서
+
+### 단계별 의존성
+
+- **설정 (1단계)**: 의존성 없음 - 즉시 시작 가능
+- **기반 작업 (2단계)**: 설정 완료에 의존 - 모든 사용자 스토리를 차단함
+- **사용자 스토리 (3~7단계)**: 모두 기반 작업 단계 완료에 의존
+  - US1과 US2 (둘 다 P1)는 MVP를 위해 함께 구현해야 함
+  - US3과 US4 (둘 다 P2)는 P1 스토리 이후 진행 가능
+  - US5 (P3)는 P2 스토리 이후 진행 가능
+- **프론트엔드 (8단계)**: 기반 작업 (2단계) 이후 시작 가능, 백엔드 스토리와 병렬 진행
+- **API 엔드포인트 (9단계)**: 기반 작업 (2단계)에 의존
+- **마무리 (10단계)**: 원하는 모든 사용자 스토리 완료에 의존
+
+### 사용자 스토리 의존성
+
+- **사용자 스토리 1 (P1)**: 기반 작업 (2단계) 이후 시작 가능 - 핵심 쿼리 생성
+- **사용자 스토리 2 (P1)**: US1 시작 후 시작 가능 - US1 흐름에 검증 레이어 추가
+- **사용자 스토리 3 (P2)**: US1과 US2에 의존 - Human-in-the-Loop 추가
+- **사용자 스토리 4 (P2)**: US3과 병렬 진행 가능 - 독립적인 오류 처리
+- **사용자 스토리 5 (P3)**: US1에 의존 - 대화 기능 확장
+
+### 각 사용자 스토리 내에서
+
+- 테스트 (포함된 경우)는 구현 전에 작성하고 실패해야 함
+- 모델 → 서비스 순서
+- 노드 → 그래프 구성 순서
+- 핵심 구현 → 통합 순서
+- 스토리 완료 후 다음 우선순위로 이동
+
+### 병렬 실행 기회
+
+- 모든 설정 작업 중 [P] 표시된 것은 병렬 실행 가능
+- 모든 기반 작업 중 [P] 표시된 것은 병렬 실행 가능 (2단계 내에서)
+- 각 사용자 스토리의 [P] 표시된 테스트는 병렬 실행 가능
+- 프론트엔드 8단계는 백엔드 3~7단계와 병렬 진행 가능
+- 다른 사용자 스토리는 다른 팀원이 병렬로 작업 가능
+
+---
+
+## 구현 전략
+
+### MVP 우선 (사용자 스토리 1 + 2)
+
+1. 1단계: 설정 완료
+2. 2단계: 기반 작업 완료 (중요 - 모든 스토리 차단)
+3. 3단계: 사용자 스토리 1 (쿼리 생성) 완료
+4. 4단계: 사용자 스토리 2 (보안 검증) 완료
+5. **중단 및 검증**: 위험 쿼리 차단과 함께 엔드투엔드 쿼리 흐름 테스트
+6. 준비되면 배포/데모
+
+### 점진적 배포
+
+1. 설정 + 기반 작업 완료 → 기반 준비
+2. 사용자 스토리 1+2 추가 → 보안이 포함된 MVP
+3. 사용자 스토리 3 추가 → Human-in-the-Loop 확인
+4. 사용자 스토리 4 추가 → 완전한 오류 처리
+5. 사용자 스토리 5 추가 → 대화 맥락
+6. 프론트엔드 완료 → 전체 웹 UI
+
+---
+
+## 참고 사항
+
+- [P] 작업 = 다른 파일, 의존성 없음
+- [Story] 레이블은 추적성을 위해 작업을 특정 사용자 스토리에 매핑
+- 각 사용자 스토리는 독립적으로 완료 및 테스트 가능해야 함
+- 구현 전에 테스트가 실패하는지 확인
+- 각 작업 또는 논리적 그룹 후 커밋
+- 어느 체크포인트에서든 중단하여 스토리를 독립적으로 검증 가능
 - 위험 쿼리 차단 (US2)은 보안 요구사항이므로 US1과 함께 MVP에 반드시 포함
