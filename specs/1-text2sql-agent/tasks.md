@@ -136,7 +136,7 @@
 
 ---
 
-## 6단계: 사용자 스토리 4 - 오류 상황 안내 (우선순위: P2)
+## 6단계: 사용자 스토리 4 - 오류 상황 안내 (우선순위: P2) ✅
 
 **목표**: 모든 오류 상황에서 비개발자가 이해할 수 있는 한국어 안내 메시지 제공
 
@@ -144,17 +144,17 @@
 
 ### 사용자 스토리 4 테스트
 
-- [ ] T051 [P] [US4] `backend/tests/unit/test_error_messages.py`에 에러 메시지 생성 단위 테스트
-- [ ] T052 [P] [US4] `backend/tests/integration/test_error_handling.py`에 오류 시나리오 통합 테스트
+- [x] T051 [P] [US4] `backend/tests/unit/test_error_messages.py`에 에러 메시지 생성 단위 테스트
+- [x] T052 [P] [US4] `backend/tests/integration/test_error_handling.py`에 오류 시나리오 통합 테스트
 
 ### 사용자 스토리 4 구현
 
-- [ ] T053 [US4] `backend/src/app/errors/messages.py`에 모든 에러 코드에 대한 한국어 에러 메시지 템플릿 정의
-- [ ] T054 [US4] 쿼리 생성 노드에 모호한 쿼리 감지 및 도움말 제안 구현
-- [ ] T055 [US4] 데이터베이스 연결 오류를 사용자 친화적 메시지로 처리
-- [ ] T056 [US4] 빈 결과 집합을 적절한 메시지로 처리 ("조건에 맞는 데이터가 없습니다")
-- [ ] T057 [US4] 쿼리 타임아웃을 더 구체적인 조건 추가 제안과 함께 처리
-- [ ] T058 [P] [US4] `frontend/src/components/common/ErrorMessage.tsx`에 ErrorMessage 컴포넌트 구현
+- [x] T053 [US4] `backend/src/app/errors/messages.py`에 모든 에러 코드에 대한 한국어 에러 메시지 템플릿 정의
+- [x] T054 [US4] 쿼리 생성 노드에 모호한 쿼리 감지 및 도움말 제안 구현
+- [x] T055 [US4] 데이터베이스 연결 오류를 사용자 친화적 메시지로 처리
+- [x] T056 [US4] 빈 결과 집합을 적절한 메시지로 처리 ("조건에 맞는 데이터가 없습니다")
+- [x] T057 [US4] 쿼리 타임아웃을 더 구체적인 조건 추가 제안과 함께 처리
+- [x] T058 [P] [US4] `frontend/src/components/common/ErrorMessage.tsx`에 ErrorMessage 컴포넌트 구현
 
 **체크포인트**: 사용자 스토리 4 완전 동작 - 모든 오류가 사용자 친화적 한국어 메시지로 표시됨
 

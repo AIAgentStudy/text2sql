@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agent.state import Text2SQLAgentState
 from app.config import get_settings
+from app.errors.messages import is_ambiguous_query, get_ambiguous_query_help
 from app.llm.factory import get_chat_model
 
 logger = logging.getLogger(__name__)
@@ -56,10 +57,22 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     """
     settings = get_settings()
     attempt = state.get("generation_attempt", 0) + 1
+    user_question = state["user_question"]
 
     logger.info(
-        f"쿼리 생성 시작 - 질문: {state['user_question'][:50]}... (시도 {attempt})"
+        f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
     )
+
+    # 모호한 쿼리 감지
+    if attempt == 1 and is_ambiguous_query(user_question):
+        logger.info("모호한 쿼리 감지")
+        help_text = get_ambiguous_query_help()
+        return {
+            "generation_attempt": attempt,
+            "generated_query": "",
+            "query_explanation": "",
+            "execution_error": help_text,
+        }
 
     # 최대 시도 횟수 확인
     if attempt > settings.max_generation_attempts:
