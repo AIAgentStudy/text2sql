@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     default_page_size: int = Field(default=100, description="기본 페이지 크기")
     max_generation_attempts: int = Field(default=3, description="쿼리 생성 최대 시도 횟수")
 
+    # === Human-in-the-Loop 설정 ===
+    auto_confirm_queries: bool = Field(
+        default=True,
+        description="쿼리 자동 확인 모드 (False면 사용자 확인 필요)",
+    )
+    require_confirmation_for_large_results: bool = Field(
+        default=False,
+        description="대용량 결과 예상 시 확인 필요 여부",
+    )
+
     # === 로깅 설정 ===
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO",

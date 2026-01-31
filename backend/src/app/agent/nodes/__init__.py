@@ -9,6 +9,7 @@ from app.agent.nodes.query_generation import query_generation_node
 from app.agent.nodes.query_validation import query_validation_node
 from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
+from app.agent.nodes.user_confirmation import user_confirmation_node
 
 __all__ = [
     "query_execution_node",
@@ -16,4 +17,5 @@ __all__ = [
     "query_validation_node",
     "response_formatting_node",
     "schema_retrieval_node",
+    "user_confirmation_node",
 ]
