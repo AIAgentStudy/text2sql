@@ -88,7 +88,7 @@
 
 ---
 
-## 4단계: 사용자 스토리 2 - 위험한 쿼리 차단 (우선순위: P1) 🎯 MVP
+## 4단계: 사용자 스토리 2 - 위험한 쿼리 차단 (우선순위: P1) 🎯 MVP ✅
 
 **목표**: UPDATE, DELETE, DROP 등 데이터 변경 쿼리를 100% 차단
 
@@ -96,17 +96,17 @@
 
 ### 사용자 스토리 2 테스트
 
-- [ ] T035 [P] [US2] `backend/tests/unit/test_keyword_validator.py`에 모든 위험 키워드에 대한 키워드 검증기 단위 테스트
-- [ ] T036 [P] [US2] `backend/tests/unit/test_schema_validator.py`에 스키마 검증기 단위 테스트
-- [ ] T037 [P] [US2] `backend/tests/integration/test_dangerous_query_blocking.py`에 위험 쿼리 차단 통합 테스트
+- [x] T035 [P] [US2] `backend/tests/unit/test_keyword_validator.py`에 모든 위험 키워드에 대한 키워드 검증기 단위 테스트
+- [x] T036 [P] [US2] `backend/tests/unit/test_schema_validator.py`에 스키마 검증기 단위 테스트
+- [x] T037 [P] [US2] `backend/tests/integration/test_dangerous_query_blocking.py`에 위험 쿼리 차단 통합 테스트
 
 ### 사용자 스토리 2 구현
 
-- [ ] T038 [US2] `backend/src/app/validation/keyword_validator.py`에 1단계 키워드 기반 안전 검증기 구현 (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
-- [ ] T039 [US2] `backend/src/app/validation/schema_validator.py`에 2단계 스키마 검증 구현 (테이블/컬럼 존재 확인)
-- [ ] T040 [US2] `backend/src/app/validation/semantic_validator.py`에 3단계 LLM 시맨틱 검증기 구현
-- [ ] T041 [US2] `backend/src/app/agent/nodes/query_validation.py`에 쿼리 검증 노드 구현 (3단계 점진적 검증)
-- [ ] T042 [US2] `backend/src/app/agent/graph.py`에 재시도 로직(최대 3회)이 포함된 검증 노드 추가로 LangGraph 워크플로우 업데이트
+- [x] T038 [US2] `backend/src/app/validation/keyword_validator.py`에 1단계 키워드 기반 안전 검증기 구현 (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
+- [x] T039 [US2] `backend/src/app/validation/schema_validator.py`에 2단계 스키마 검증 구현 (테이블/컬럼 존재 확인)
+- [x] T040 [US2] `backend/src/app/validation/semantic_validator.py`에 3단계 LLM 시맨틱 검증기 구현
+- [x] T041 [US2] `backend/src/app/agent/nodes/query_validation.py`에 쿼리 검증 노드 구현 (3단계 점진적 검증)
+- [x] T042 [US2] `backend/src/app/agent/graph.py`에 재시도 로직(최대 3회)이 포함된 검증 노드 추가로 LangGraph 워크플로우 업데이트
 
 **체크포인트**: 사용자 스토리 2 완전 동작 - 모든 위험 쿼리가 사용자 친화적 메시지와 함께 차단됨
 
