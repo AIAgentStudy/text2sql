@@ -2,19 +2,50 @@
 쿼리 생성 노드
 
 LLM을 사용하여 자연어 질문을 SQL 쿼리로 변환합니다.
+대화 맥락을 활용하여 연속 질문을 처리합니다.
 """
 
 import logging
+import re
 import uuid
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from app.agent.state import Text2SQLAgentState
 from app.config import get_settings
-from app.errors.messages import is_ambiguous_query, get_ambiguous_query_help
+from app.errors.messages import get_ambiguous_query_help, is_ambiguous_query
 from app.llm.factory import get_chat_model
 
 logger = logging.getLogger(__name__)
+
+# 맥락 참조 패턴 (한국어)
+CONTEXT_REFERENCE_PATTERNS = [
+    r"그중에",
+    r"그\s*중에서",
+    r"거기서",
+    r"거기에서",
+    r"위에서",
+    r"이전\s*(결과|데이터|것)",
+    r"방금\s*(그|저|그것|거)",
+    r"아까\s*(그|저|그것)",
+    r"그\s*(데이터|결과|것)",
+    r"저\s*(데이터|결과|것)",
+    r"말한\s*것",
+    r"보여준\s*것",
+    r"조회한\s*것",
+]
+
+# 리셋 명령어 패턴
+RESET_COMMAND_PATTERNS = [
+    r"^처음부터\s*다시$",
+    r"^다시\s*시작$",
+    r"^새로운\s*대화$",
+    r"^리셋$",
+    r"^초기화$",
+    r"^대화\s*초기화$",
+    r"^세션\s*초기화$",
+    r"^새\s*대화$",
+]
 
 SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
 사용자의 자연어 질문을 SQL SELECT 쿼리로 변환하는 것이 당신의 임무입니다.
@@ -42,12 +73,157 @@ SQL:
 {schema}
 """
 
+CONTEXT_AWARE_SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
+사용자의 자연어 질문을 SQL SELECT 쿼리로 변환하는 것이 당신의 임무입니다.
+
+## 대화 맥락
+사용자와의 이전 대화 내용을 참고하여 현재 질문을 이해하세요.
+"그중에", "거기서", "이전 결과에서" 같은 표현은 이전 질문/결과를 참조합니다.
+
+## 이전 대화
+{conversation_history}
+
+## 규칙
+1. 반드시 SELECT 문만 생성하세요. UPDATE, DELETE, INSERT, DROP 등은 절대 사용하지 마세요.
+2. 주어진 스키마에 있는 테이블과 컬럼만 사용하세요.
+3. 이전 대화 맥락을 활용하여 현재 질문을 정확히 이해하세요.
+4. "그중에", "거기서" 등의 표현은 이전 쿼리 결과를 필터링하는 것입니다.
+5. 이전 쿼리의 조건을 유지하면서 새로운 조건을 추가하세요.
+
+## 출력 형식
+다음 형식으로 정확히 응답하세요:
+
+SQL:
+```sql
+여기에 SQL 쿼리
+```
+
+설명:
+여기에 이 쿼리가 무엇을 조회하는지 한국어로 설명
+
+## 데이터베이스 스키마
+{schema}
+"""
+
+
+def detect_context_reference(question: str) -> bool:
+    """
+    질문에서 이전 대화 맥락 참조 감지
+
+    Args:
+        question: 사용자 질문
+
+    Returns:
+        맥락 참조 여부
+    """
+    question_lower = question.lower().strip()
+
+    for pattern in CONTEXT_REFERENCE_PATTERNS:
+        if re.search(pattern, question_lower):
+            return True
+
+    return False
+
+
+def is_reset_command(question: str) -> bool:
+    """
+    리셋 명령어인지 확인
+
+    Args:
+        question: 사용자 입력
+
+    Returns:
+        리셋 명령어 여부
+    """
+    question_normalized = question.strip()
+
+    for pattern in RESET_COMMAND_PATTERNS:
+        if re.match(pattern, question_normalized, re.IGNORECASE):
+            return True
+
+    return False
+
+
+def build_context_aware_prompt(
+    current_question: str,
+    message_history: list[BaseMessage],
+    schema: str,
+) -> str:
+    """
+    대화 맥락을 포함한 프롬프트 생성
+
+    Args:
+        current_question: 현재 질문
+        message_history: 이전 대화 히스토리
+        schema: 데이터베이스 스키마
+
+    Returns:
+        맥락이 포함된 프롬프트
+    """
+    if not message_history:
+        return SYSTEM_PROMPT.format(schema=schema)
+
+    # 대화 히스토리 포맷팅
+    history_lines = []
+    for msg in message_history[-6:]:  # 최근 6개 메시지만
+        if isinstance(msg, HumanMessage):
+            history_lines.append(f"사용자: {msg.content}")
+        elif isinstance(msg, AIMessage):
+            # AI 응답에서 SQL 쿼리 부분만 추출
+            content = str(msg.content)
+            if "```sql" in content:
+                try:
+                    sql_start = content.index("```sql") + 6
+                    sql_end = content.index("```", sql_start)
+                    sql = content[sql_start:sql_end].strip()
+                    history_lines.append(f"생성된 쿼리: {sql}")
+                except ValueError:
+                    history_lines.append(f"어시스턴트: {content[:200]}")
+            else:
+                history_lines.append(f"어시스턴트: {content[:200]}")
+
+    conversation_history = "\n".join(history_lines)
+
+    return CONTEXT_AWARE_SYSTEM_PROMPT.format(
+        conversation_history=conversation_history,
+        schema=schema,
+    )
+
+
+def format_messages_for_llm(
+    message_history: list[BaseMessage],
+    current_question: str,
+    system_prompt: str,
+) -> list[BaseMessage]:
+    """
+    LLM 호출을 위한 메시지 목록 구성
+
+    Args:
+        message_history: 이전 대화 히스토리
+        current_question: 현재 질문
+        system_prompt: 시스템 프롬프트
+
+    Returns:
+        LLM에 전달할 메시지 목록
+    """
+    messages: list[BaseMessage] = [SystemMessage(content=system_prompt)]
+
+    # 이전 대화 히스토리 추가 (최근 4개까지)
+    for msg in message_history[-4:]:
+        messages.append(msg)
+
+    # 현재 질문 추가
+    messages.append(HumanMessage(content=current_question))
+
+    return messages
+
 
 async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     """
     쿼리 생성 노드
 
     LLM을 사용하여 자연어 질문을 SQL 쿼리로 변환합니다.
+    대화 맥락을 활용하여 연속 질문을 처리합니다.
 
     Args:
         state: 현재 에이전트 상태
@@ -58,13 +234,40 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     settings = get_settings()
     attempt = state.get("generation_attempt", 0) + 1
     user_question = state["user_question"]
+    message_history = state.get("messages", [])
 
     logger.info(
         f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
     )
 
-    # 모호한 쿼리 감지
-    if attempt == 1 and is_ambiguous_query(user_question):
+    # 리셋 명령어 확인
+    if is_reset_command(user_question):
+        logger.info("리셋 명령어 감지 - 세션 초기화")
+        return {
+            "generation_attempt": attempt,
+            "generated_query": "",
+            "query_explanation": "",
+            "execution_error": None,
+            "final_response": "대화가 초기화되었습니다. 새로운 질문을 해주세요.",
+            "response_format": "summary",
+            # 메시지 히스토리 초기화는 세션 매니저에서 처리
+        }
+
+    # 맥락 참조 감지
+    has_context_reference = detect_context_reference(user_question)
+
+    # 맥락 참조가 있는데 히스토리가 없으면 안내
+    if has_context_reference and not message_history:
+        logger.info("맥락 참조 있으나 히스토리 없음")
+        return {
+            "generation_attempt": attempt,
+            "generated_query": "",
+            "query_explanation": "",
+            "execution_error": "이전 대화 내용이 없습니다. 먼저 조회할 데이터를 알려주세요.\n\n예: '지난달 매출을 보여줘'",
+        }
+
+    # 모호한 쿼리 감지 (맥락 참조가 없는 경우에만)
+    if attempt == 1 and not has_context_reference and is_ambiguous_query(user_question):
         logger.info("모호한 쿼리 감지")
         help_text = get_ambiguous_query_help()
         return {
@@ -86,14 +289,23 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         # LLM 모델 가져오기
         llm = get_chat_model()
 
-        # 시스템 프롬프트 구성
-        system_prompt = SYSTEM_PROMPT.format(schema=state["database_schema"])
+        # 맥락 인식 프롬프트 생성
+        if has_context_reference and message_history:
+            logger.info("맥락 인식 모드로 쿼리 생성")
+            system_prompt = build_context_aware_prompt(
+                current_question=user_question,
+                message_history=message_history,
+                schema=state["database_schema"],
+            )
+        else:
+            system_prompt = SYSTEM_PROMPT.format(schema=state["database_schema"])
 
-        # 대화 맥락 구성
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=state["user_question"]),
-        ]
+        # 메시지 구성
+        messages = format_messages_for_llm(
+            message_history=message_history if has_context_reference else [],
+            current_question=user_question,
+            system_prompt=system_prompt,
+        )
 
         # LLM 호출
         response = await llm.ainvoke(messages)
@@ -116,12 +328,18 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
 
         logger.info(f"쿼리 생성 완료 - ID: {query_id}")
 
+        # 메시지 히스토리에 현재 대화 추가
+        updated_messages = list(message_history)
+        updated_messages.append(HumanMessage(content=user_question))
+        updated_messages.append(AIMessage(content=response_text))
+
         return {
             "generation_attempt": attempt,
             "generated_query": sql_query,
             "query_explanation": explanation,
             "query_id": query_id,
             "execution_error": None,
+            "messages": updated_messages,
         }
 
     except Exception as e:
