@@ -53,6 +53,11 @@ services:
       # LLM 설정
       DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-openai}
 
+      # JWT 인증 설정
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-key-change-in-production}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+
       # 로깅 설정
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
@@ -63,12 +68,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # 마이그레이션 실행 후 서버 시작
+    command: >
+      sh -c "cd /app && alembic upgrade head && python -m app.main"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     networks:
       - text2sql-network
 

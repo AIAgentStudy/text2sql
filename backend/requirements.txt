@@ -16,6 +16,12 @@ sse-starlette>=2.2.1
 
 # === 데이터베이스 ===
 asyncpg>=0.30.0
+alembic>=1.14.0
+sqlalchemy[asyncio]>=2.0.0
+
+# === 인증 ===
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
 
 # === 데이터 검증 ===
 pydantic>=2.10.4
