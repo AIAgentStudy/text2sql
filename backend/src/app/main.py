@@ -5,30 +5,81 @@ Text2SQL Agent API 서버의 메인 진입점입니다.
 """
 
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from app.config import get_settings
+from app.config import get_settings, setup_logging
 from app.database.connection import close_pool, create_pool
 from app.errors.handlers import register_error_handlers
 
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger(__name__)
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """요청 로깅 미들웨어"""
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        # 요청 ID 생성
+        request_id = str(uuid.uuid4())[:8]
+        request.state.request_id = request_id
+
+        # 요청 시작 시간
+        start_time = time.perf_counter()
+
+        # 요청 정보 로깅
+        logger.info(
+            f"[{request_id}] → {request.method} {request.url.path}"
+            + (f"?{request.url.query}" if request.url.query else "")
+        )
+
+        # 요청 처리
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # 예외 발생 시 로깅
+            duration_ms = (time.perf_counter() - start_time) * 1000
+            logger.error(
+                f"[{request_id}] ✗ {request.method} {request.url.path} "
+                f"| 500 | {duration_ms:.1f}ms | {type(e).__name__}: {e}"
+            )
+            raise
+
+        # 응답 시간 계산
+        duration_ms = (time.perf_counter() - start_time) * 1000
+
+        # 응답 로깅
+        status_icon = "✓" if response.status_code < 400 else "✗"
+        log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        logger.log(
+            log_level,
+            f"[{request_id}] {status_icon} {request.method} {request.url.path} "
+            f"| {response.status_code} | {duration_ms:.1f}ms",
+        )
+
+        # 응답 헤더에 요청 ID 추가
+        response.headers["X-Request-ID"] = request_id
+
+        return response
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """애플리케이션 수명 주기 관리"""
     # 시작 시
-    logger.info("Text2SQL Agent 서버 시작 중...")
     settings = get_settings()
+
+    # 로깅 설정
+    setup_logging(settings)
+
+    logger.info("Text2SQL Agent 서버 시작 중...")
 
     # 데이터베이스 연결 풀 생성
     try:
@@ -58,6 +109,9 @@ def create_app() -> FastAPI:
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
     )
+
+    # 요청 로깅 미들웨어 (먼저 등록)
+    app.add_middleware(RequestLoggingMiddleware)
 
     # CORS 미들웨어 설정
     app.add_middleware(

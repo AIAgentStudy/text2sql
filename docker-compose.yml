@@ -1,0 +1,109 @@
+# Text2SQL Agent Docker Compose
+# 로컬 개발 및 테스트 환경용
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # PostgreSQL 데이터베이스
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: text2sql-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-text2sql}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-text2sql_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-text2sql_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 초기화 SQL (있는 경우)
+      # - ./db/init:/docker-entrypoint-initdb.d
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-text2sql} -d ${POSTGRES_DB:-text2sql_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - text2sql-network
+
+  # ===========================================
+  # 백엔드 API 서버
+  # ===========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: text2sql-backend
+    environment:
+      # 서버 설정
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEBUG: ${DEBUG:-true}
+
+      # 데이터베이스 설정
+      DATABASE_URL: postgresql://${POSTGRES_USER:-text2sql}:${POSTGRES_PASSWORD:-text2sql_dev}@postgres:5432/${POSTGRES_DB:-text2sql_db}
+
+      # LLM API 키 (호스트 환경에서 전달)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+
+      # LLM 설정
+      DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-openai}
+
+      # 로깅 설정
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # CORS 설정
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:5173", "http://localhost"]'
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - text2sql-network
+
+  # ===========================================
+  # 프론트엔드 웹 서버
+  # ===========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""  # 프록시 사용으로 빈 값
+    container_name: text2sql-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - text2sql-network
+
+# ===========================================
+# 네트워크 설정
+# ===========================================
+networks:
+  text2sql-network:
+    driver: bridge
+
+# ===========================================
+# 볼륨 설정
+# ===========================================
+volumes:
+  postgres_data:
+    driver: local
