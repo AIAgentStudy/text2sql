@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     default_page_size: int = Field(default=100, description="기본 페이지 크기")
     max_generation_attempts: int = Field(default=3, description="쿼리 생성 최대 시도 횟수")
 
+    # === 검증 설정 ===
+    enable_semantic_validation: bool = Field(
+        default=True,
+        description="LLM 시맨틱 검증 활성화 여부",
+    )
+
     # === 로깅 설정 ===
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO",

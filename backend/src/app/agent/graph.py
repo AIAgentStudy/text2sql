@@ -12,24 +12,60 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agent.nodes.query_execution import query_execution_node
 from app.agent.nodes.query_generation import query_generation_node
+from app.agent.nodes.query_validation import query_validation_node
 from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
 from app.agent.state import Text2SQLAgentState
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
 def should_continue_after_generation(
     state: Text2SQLAgentState,
-) -> Literal["execute", "format_error"]:
+) -> Literal["validate", "format_error"]:
     """
     쿼리 생성 후 다음 단계 결정
 
-    쿼리가 성공적으로 생성되었으면 실행, 아니면 에러 포맷팅으로 이동
+    쿼리가 성공적으로 생성되었으면 검증, 아니면 에러 포맷팅으로 이동
     """
     if state.get("execution_error") or not state.get("generated_query"):
         return "format_error"
-    return "execute"
+    return "validate"
+
+
+def should_continue_after_validation(
+    state: Text2SQLAgentState,
+) -> Literal["execute", "retry_generation", "format_error"]:
+    """
+    쿼리 검증 후 다음 단계 결정
+
+    검증 통과 시 실행, 재시도 가능하면 재생성, 아니면 에러 포맷팅
+    """
+    settings = get_settings()
+
+    # 검증 통과
+    if state.get("is_query_valid"):
+        return "execute"
+
+    # 재시도 가능 여부 확인
+    attempt = state.get("generation_attempt", 0)
+    if attempt < settings.max_generation_attempts:
+        validation_errors = state.get("validation_errors", [])
+
+        # 스키마/키워드 오류는 재시도해도 해결되지 않음
+        for error in validation_errors:
+            if "[스키마]" in str(error) or "[키워드]" in str(error):
+                logger.info("재시도로 해결되지 않는 오류, 에러 포맷팅으로 이동")
+                return "format_error"
+
+        # 시맨틱 오류는 재시도 가능
+        logger.info(f"검증 실패, 재시도 (시도 {attempt + 1})")
+        return "retry_generation"
+
+    # 최대 재시도 횟수 도달
+    logger.warning(f"최대 재시도 횟수({settings.max_generation_attempts}) 도달")
+    return "format_error"
 
 
 def should_continue_after_execution(
@@ -48,9 +84,11 @@ def build_graph() -> StateGraph:
     Text2SQL 에이전트 그래프 빌드
 
     워크플로우:
-    START → 스키마 조회 → 쿼리 생성 → 쿼리 실행 → 응답 포맷팅 → END
-                                ↓ (실패 시)
-                          응답 포맷팅 → END
+    START → 스키마 조회 → 쿼리 생성 → 쿼리 검증 → 쿼리 실행 → 응답 포맷팅 → END
+                              ↑              ↓ (재시도)
+                              └──────────────┘
+                                        ↓ (실패 시)
+                                  응답 포맷팅 → END
 
     Returns:
         StateGraph: 컴파일되지 않은 그래프
@@ -63,6 +101,7 @@ def build_graph() -> StateGraph:
     # 노드 추가
     graph.add_node("schema_retrieval", schema_retrieval_node)
     graph.add_node("query_generation", query_generation_node)
+    graph.add_node("query_validation", query_validation_node)
     graph.add_node("query_execution", query_execution_node)
     graph.add_node("response_formatting", response_formatting_node)
 
@@ -73,12 +112,23 @@ def build_graph() -> StateGraph:
     # 스키마 조회 → 쿼리 생성
     graph.add_edge("schema_retrieval", "query_generation")
 
-    # 쿼리 생성 → 조건부 분기
+    # 쿼리 생성 → 조건부 분기 (검증 또는 에러)
     graph.add_conditional_edges(
         "query_generation",
         should_continue_after_generation,
         {
+            "validate": "query_validation",
+            "format_error": "response_formatting",
+        },
+    )
+
+    # 쿼리 검증 → 조건부 분기 (실행, 재생성, 또는 에러)
+    graph.add_conditional_edges(
+        "query_validation",
+        should_continue_after_validation,
+        {
             "execute": "query_execution",
+            "retry_generation": "query_generation",
             "format_error": "response_formatting",
         },
     )
