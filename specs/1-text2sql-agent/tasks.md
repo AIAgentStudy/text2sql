@@ -182,52 +182,58 @@
 
 ---
 
-## 8단계: 프론트엔드 구현
+## 8단계: 프론트엔드 구현 ✅
 
 **목적**: 사용자 상호작용을 위한 웹 채팅 UI
 
-- [ ] T065 [P] `frontend/src/types/index.ts`에 API 스키마와 일치하는 TypeScript 타입 생성
-- [ ] T066 [P] `frontend/src/services/api.ts`에 SSE 지원이 포함된 API 서비스 구현
-- [ ] T067 [P] `frontend/src/hooks/useSession.ts`에 useSession 훅 생성
-- [ ] T068 [P] `frontend/src/hooks/useChat.ts`에 SSE 처리가 포함된 useChat 훅 생성
-- [ ] T069 `frontend/src/components/Chat/ChatContainer.tsx`에 ChatContainer 컴포넌트 구현
-- [ ] T070 [P] `frontend/src/components/Chat/MessageList.tsx`에 MessageList 컴포넌트 구현
-- [ ] T071 [P] `frontend/src/components/Chat/MessageInput.tsx`에 MessageInput 컴포넌트 구현
-- [ ] T072 [P] `frontend/src/components/Chat/ResultTable.tsx`에 페이지네이션이 포함된 ResultTable 컴포넌트 구현
-- [ ] T073 [P] `frontend/src/components/common/LoadingSpinner.tsx`에 LoadingSpinner 컴포넌트 구현
-- [ ] T074 `frontend/src/App.tsx`에 React Query 프로바이더와 메인 레이아웃이 포함된 App.tsx 생성
-- [ ] T075 [P] `frontend/tailwind.config.js`에 Tailwind CSS 설정
-- [ ] T076 [P] `frontend/vite.config.ts`에 Vite 설정
+- [x] T065 [P] `frontend/src/types/index.ts`에 API 스키마와 일치하는 TypeScript 타입 생성
+- [x] T066 [P] `frontend/src/services/api.ts`에 SSE 지원이 포함된 API 서비스 구현
+- [x] T067 [P] `frontend/src/hooks/useSession.ts`에 useSession 훅 생성
+- [x] T068 [P] `frontend/src/hooks/useChat.ts`에 SSE 처리가 포함된 useChat 훅 생성
+- [x] T069 `frontend/src/components/Chat/ChatContainer.tsx`에 ChatContainer 컴포넌트 구현
+- [x] T070 [P] `frontend/src/components/Chat/MessageList.tsx`에 MessageList 컴포넌트 구현
+- [x] T071 [P] `frontend/src/components/Chat/MessageInput.tsx`에 MessageInput 컴포넌트 구현
+- [x] T072 [P] `frontend/src/components/Chat/ResultTable.tsx`에 페이지네이션이 포함된 ResultTable 컴포넌트 구현
+- [x] T073 [P] `frontend/src/components/common/LoadingSpinner.tsx`에 LoadingSpinner 컴포넌트 구현
+- [x] T074 `frontend/src/App.tsx`에 React Query 프로바이더와 메인 레이아웃이 포함된 App.tsx 생성
+- [x] T075 [P] `frontend/tailwind.config.js`에 Tailwind CSS 설정
+- [x] T076 [P] `frontend/vite.config.ts`에 Vite 설정
+
+**체크포인트**: 프론트엔드 완전 동작 - 웹 UI를 통한 채팅 인터페이스 제공
 
 ---
 
-## 9단계: API 엔드포인트 완성
+## 9단계: API 엔드포인트 완성 ✅
 
 **목적**: OpenAPI 계약에 따른 추가 API 엔드포인트
 
-- [ ] T077 [P] `backend/src/app/api/routes/session.py`에 세션 생성 엔드포인트 구현
-- [ ] T078 [P] `backend/src/app/api/routes/session.py`에 세션 조회 엔드포인트 구현
-- [ ] T079 [P] `backend/src/app/api/routes/session.py`에 세션 종료 엔드포인트 구현
-- [ ] T080 [P] `backend/src/app/api/routes/schema.py`에 스키마 조회 엔드포인트 구현
-- [ ] T081 [P] `backend/src/app/api/routes/schema.py`에 스키마 갱신 엔드포인트 구현
-- [ ] T082 main.py에 모든 라우터 등록
+- [x] T077 [P] `backend/src/app/api/routes/session.py`에 세션 생성 엔드포인트 구현
+- [x] T078 [P] `backend/src/app/api/routes/session.py`에 세션 조회 엔드포인트 구현
+- [x] T079 [P] `backend/src/app/api/routes/session.py`에 세션 종료 엔드포인트 구현
+- [x] T080 [P] `backend/src/app/api/routes/schema.py`에 스키마 조회 엔드포인트 구현
+- [x] T081 [P] `backend/src/app/api/routes/schema.py`에 스키마 갱신 엔드포인트 구현
+- [x] T082 main.py에 모든 라우터 등록
+
+**체크포인트**: API 완성 - 모든 REST API 엔드포인트 제공
 
 ---
 
-## 10단계: 마무리 및 공통 관심사
+## 10단계: 마무리 및 공통 관심사 ✅
 
 **목적**: 여러 사용자 스토리에 영향을 미치는 개선 사항
 
-- [ ] T083 [P] `backend/src/app/config.py`에 구조화된 로깅 설정 추가
-- [ ] T084 [P] `backend/src/app/main.py`에 요청 로깅 미들웨어 추가
+- [x] T083 [P] `backend/src/app/config.py`에 구조화된 로깅 설정 추가
+- [x] T084 [P] `backend/src/app/main.py`에 요청 로깅 미들웨어 추가
 - [ ] T085 mypy로 코드 정리 및 타입 어노테이션 검증
 - [ ] T086 [P] 모든 Python 파일에 ruff 린팅 및 포매팅 실행
-- [ ] T087 [P] `backend/Dockerfile`에 백엔드용 Dockerfile 생성
-- [ ] T088 [P] `frontend/Dockerfile`에 프론트엔드용 Dockerfile 생성
-- [ ] T089 [P] 로컬 개발용 docker-compose.yml 생성
+- [x] T087 [P] `backend/Dockerfile`에 백엔드용 Dockerfile 생성
+- [x] T088 [P] `frontend/Dockerfile`에 프론트엔드용 Dockerfile 생성
+- [x] T089 [P] 로컬 개발용 docker-compose.yml 생성
 - [ ] T090 quickstart.md 검증 실행 (모든 단계 동작 확인)
 - [ ] T091 보안 검토: 모든 SQL 쿼리가 파라미터화된 실행을 사용하는지 확인
 - [ ] T092 성능 테스트: 10초 응답 시간 목표 달성 확인
+
+**체크포인트**: 배포 준비 완료 - Docker 기반 배포 가능
 
 ---
 
