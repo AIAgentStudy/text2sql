@@ -4,6 +4,8 @@
 Pydantic Settings를 사용하여 환경 변수에서 설정을 로드합니다.
 """
 
+import logging
+import sys
 from functools import lru_cache
 from typing import Literal
 
@@ -57,6 +59,16 @@ class Settings(BaseSettings):
     default_page_size: int = Field(default=100, description="기본 페이지 크기")
     max_generation_attempts: int = Field(default=3, description="쿼리 생성 최대 시도 횟수")
 
+    # === Human-in-the-Loop 설정 ===
+    auto_confirm_queries: bool = Field(
+        default=True,
+        description="쿼리 자동 확인 모드 (False면 사용자 확인 필요)",
+    )
+    require_confirmation_for_large_results: bool = Field(
+        default=False,
+        description="대용량 결과 예상 시 확인 필요 여부",
+    )
+
     # === 로깅 설정 ===
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO",
@@ -79,3 +91,50 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """설정 인스턴스를 가져옵니다 (캐싱됨)"""
     return Settings()
+
+
+def setup_logging(settings: Settings | None = None) -> None:
+    """
+    구조화된 로깅 설정
+
+    Args:
+        settings: 애플리케이션 설정 (없으면 자동 로드)
+    """
+    if settings is None:
+        settings = get_settings()
+
+    # 로그 포맷 설정
+    log_format = (
+        "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s"
+        if settings.debug
+        else "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    )
+
+    # JSON 포맷 (프로덕션용)
+    json_format = (
+        '{"time": "%(asctime)s", "level": "%(levelname)s", '
+        '"logger": "%(name)s", "message": "%(message)s"}'
+    )
+
+    # 핸들러 설정
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(
+        logging.Formatter(
+            log_format if settings.debug else json_format,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
+
+    # 루트 로거 설정
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, settings.log_level))
+    root_logger.handlers = [handler]
+
+    # 서드파티 라이브러리 로그 레벨 조정
+    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("asyncpg").setLevel(logging.WARNING)
+
+    logging.info(f"로깅 설정 완료: 레벨={settings.log_level}, 디버그={settings.debug}")

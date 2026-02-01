@@ -9,6 +9,7 @@ import logging
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException
+from langgraph.types import Command
 from sse_starlette.sse import EventSourceResponse
 
 from app.agent.graph import get_graph
@@ -25,11 +26,13 @@ from app.models.responses import (
     ResultEvent,
     SessionEvent,
     StatusEvent,
+    ConfirmationRequiredEvent,
 )
 from app.session.manager import (
     add_message_to_session,
     get_checkpointer,
     get_or_create_session,
+    get_session,
     update_session_activity,
 )
 
@@ -87,6 +90,8 @@ async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
 
             # 그래프 실행 및 스트리밍
             final_state = None
+            is_interrupted = False
+
             async for event in graph.astream(initial_state, config):
                 # 노드별 이벤트 처리
                 for node_name, node_output in event.items():
@@ -96,8 +101,8 @@ async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
                     if node_name == "query_generation" and node_output.get("generated_query"):
                         yield _format_sse_event(
                             StatusEvent(
-                                status=QueryRequestStatus.EXECUTING,
-                                message="쿼리를 실행하고 있습니다...",
+                                status=QueryRequestStatus.VALIDATING,
+                                message="쿼리를 검증하고 있습니다...",
                             )
                         )
                         yield _format_sse_event(
@@ -106,6 +111,42 @@ async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
                                 explanation=node_output.get("query_explanation", ""),
                             )
                         )
+
+                    # 검증 완료 시
+                    if node_name == "query_validation" and node_output.get("is_query_valid"):
+                        yield _format_sse_event(
+                            StatusEvent(
+                                status=QueryRequestStatus.AWAITING_CONFIRMATION,
+                                message="쿼리 확인을 기다리고 있습니다...",
+                            )
+                        )
+
+                    # 사용자 확인 대기 중 (interrupt 발생)
+                    if node_name == "user_confirmation":
+                        if node_output.get("user_approved") is None:
+                            is_interrupted = True
+                            yield _format_sse_event(
+                                ConfirmationRequiredEvent(
+                                    query_id=node_output.get("query_id", ""),
+                                    query=node_output.get("generated_query", ""),
+                                    explanation=node_output.get("query_explanation", ""),
+                                )
+                            )
+
+                    # 쿼리 실행 중
+                    if node_name == "query_execution":
+                        yield _format_sse_event(
+                            StatusEvent(
+                                status=QueryRequestStatus.EXECUTING,
+                                message="쿼리를 실행하고 있습니다...",
+                            )
+                        )
+
+            # 인터럽트 상태인 경우 (Human-in-the-Loop)
+            if is_interrupted:
+                yield _format_sse_event(DoneEvent(awaiting_confirmation=True))
+                update_session_activity(session_id)
+                return
 
             # 최종 결과 전송
             if final_state:
@@ -175,17 +216,99 @@ async def confirm_query(request: ConfirmationRequest) -> ConfirmationResponse:
     쿼리 실행 확인 엔드포인트
 
     Human-in-the-Loop: 사용자가 쿼리 실행을 승인하면 실행합니다.
-    (현재 버전에서는 자동 실행, 추후 US3에서 구현)
+    LangGraph Command(resume)를 사용하여 일시 중지된 워크플로우를 재개합니다.
     """
     try:
+        session_id = request.session_id
+        query_id = request.query_id
+
+        logger.info(
+            f"쿼리 확인 요청 - 세션: {session_id}, 쿼리: {query_id}, 승인: {request.approved}"
+        )
+
+        # 세션 확인
+        session = get_session(session_id)
+        if not session:
+            logger.warning(f"세션을 찾을 수 없음: {session_id}")
+            return ConfirmationResponse(
+                success=False,
+                result=None,
+                error=ErrorDetail(
+                    code="SESSION_NOT_FOUND",
+                    message="세션이 만료되었거나 존재하지 않습니다.",
+                ),
+            )
+
+        # 그래프 가져오기
+        graph = get_graph(get_checkpointer())
+        config = {"configurable": {"thread_id": session_id}}
+
+        # 사용자 응답 구성
+        user_response = {
+            "approved": request.approved,
+            "modified_query": request.modified_query,
+        }
+
         if not request.approved:
+            # 거부 시 Command(resume)로 재개하되 거부 상태 전달
+            logger.info(f"사용자가 쿼리 실행을 거부함: {query_id}")
+
+            # Command로 워크플로우 재개 (거부 상태)
+            final_state = None
+            async for event in graph.astream(
+                Command(resume=user_response),
+                config,
+            ):
+                for node_name, node_output in event.items():
+                    final_state = node_output
+
             return ConfirmationResponse(
                 success=True,
                 result=None,
                 error=None,
             )
 
-        # 승인 시 처리 (US3에서 구현)
+        # 승인 시 Command(resume)로 워크플로우 재개
+        logger.info(f"사용자가 쿼리 실행을 승인함: {query_id}")
+
+        # 수정된 쿼리가 있는 경우
+        if request.modified_query:
+            logger.info(f"수정된 쿼리로 실행: {request.modified_query[:50]}...")
+
+        # Command로 워크플로우 재개
+        final_state = None
+        async for event in graph.astream(
+            Command(resume=user_response),
+            config,
+        ):
+            for node_name, node_output in event.items():
+                final_state = node_output
+
+        # 결과 반환
+        if final_state:
+            if final_state.get("execution_error"):
+                return ConfirmationResponse(
+                    success=False,
+                    result=None,
+                    error=ErrorDetail(
+                        code="EXECUTION_ERROR",
+                        message=final_state.get("execution_error", ""),
+                    ),
+                )
+
+            return ConfirmationResponse(
+                success=True,
+                result=QueryResultData(
+                    rows=final_state.get("query_result", []),
+                    total_row_count=final_state.get("total_row_count", 0),
+                    returned_row_count=len(final_state.get("query_result", [])),
+                    columns=[],
+                    is_truncated=False,
+                    execution_time_ms=final_state.get("execution_time_ms", 0),
+                ),
+                error=None,
+            )
+
         return ConfirmationResponse(
             success=True,
             result=None,

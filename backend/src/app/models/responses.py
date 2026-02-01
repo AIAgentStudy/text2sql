@@ -46,10 +46,19 @@ class QueryPreviewEvent(BaseModel):
 
 
 class ConfirmRequiredEvent(BaseModel):
-    """확인 필요 이벤트"""
+    """확인 필요 이벤트 (간단 버전)"""
 
     type: Literal["confirm_required"] = "confirm_required"
     query_id: str = Field(description="확인이 필요한 쿼리 ID")
+
+
+class ConfirmationRequiredEvent(BaseModel):
+    """확인 필요 이벤트 (상세 버전)"""
+
+    type: Literal["confirmation_required"] = "confirmation_required"
+    query_id: str = Field(description="확인이 필요한 쿼리 ID")
+    query: str = Field(description="실행할 SQL 쿼리")
+    explanation: str = Field(description="쿼리에 대한 한국어 설명")
 
 
 class QueryResultData(BaseModel):
@@ -88,6 +97,10 @@ class DoneEvent(BaseModel):
     """완료 이벤트"""
 
     type: Literal["done"] = "done"
+    awaiting_confirmation: bool = Field(
+        default=False,
+        description="True면 사용자 확인 대기 중 (Human-in-the-Loop)",
+    )
 
 
 # SSE 이벤트 유니온 타입
@@ -96,6 +109,7 @@ ChatStreamEvent = Union[
     StatusEvent,
     QueryPreviewEvent,
     ConfirmRequiredEvent,
+    ConfirmationRequiredEvent,
     ResultEvent,
     ErrorEvent,
     DoneEvent,

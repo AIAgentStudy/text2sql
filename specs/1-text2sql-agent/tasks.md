@@ -88,7 +88,7 @@
 
 ---
 
-## 4단계: 사용자 스토리 2 - 위험한 쿼리 차단 (우선순위: P1) 🎯 MVP
+## 4단계: 사용자 스토리 2 - 위험한 쿼리 차단 (우선순위: P1) 🎯 MVP ✅
 
 **목표**: UPDATE, DELETE, DROP 등 데이터 변경 쿼리를 100% 차단
 
@@ -96,23 +96,23 @@
 
 ### 사용자 스토리 2 테스트
 
-- [ ] T035 [P] [US2] `backend/tests/unit/test_keyword_validator.py`에 모든 위험 키워드에 대한 키워드 검증기 단위 테스트
-- [ ] T036 [P] [US2] `backend/tests/unit/test_schema_validator.py`에 스키마 검증기 단위 테스트
-- [ ] T037 [P] [US2] `backend/tests/integration/test_dangerous_query_blocking.py`에 위험 쿼리 차단 통합 테스트
+- [x] T035 [P] [US2] `backend/tests/unit/test_keyword_validator.py`에 모든 위험 키워드에 대한 키워드 검증기 단위 테스트
+- [x] T036 [P] [US2] `backend/tests/unit/test_schema_validator.py`에 스키마 검증기 단위 테스트
+- [x] T037 [P] [US2] `backend/tests/integration/test_dangerous_query_blocking.py`에 위험 쿼리 차단 통합 테스트
 
 ### 사용자 스토리 2 구현
 
-- [ ] T038 [US2] `backend/src/app/validation/keyword_validator.py`에 1단계 키워드 기반 안전 검증기 구현 (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
-- [ ] T039 [US2] `backend/src/app/validation/schema_validator.py`에 2단계 스키마 검증 구현 (테이블/컬럼 존재 확인)
-- [ ] T040 [US2] `backend/src/app/validation/semantic_validator.py`에 3단계 LLM 시맨틱 검증기 구현
-- [ ] T041 [US2] `backend/src/app/agent/nodes/query_validation.py`에 쿼리 검증 노드 구현 (3단계 점진적 검증)
-- [ ] T042 [US2] `backend/src/app/agent/graph.py`에 재시도 로직(최대 3회)이 포함된 검증 노드 추가로 LangGraph 워크플로우 업데이트
+- [x] T038 [US2] `backend/src/app/validation/keyword_validator.py`에 1단계 키워드 기반 안전 검증기 구현 (UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE)
+- [x] T039 [US2] `backend/src/app/validation/schema_validator.py`에 2단계 스키마 검증 구현 (테이블/컬럼 존재 확인)
+- [x] T040 [US2] `backend/src/app/validation/semantic_validator.py`에 3단계 LLM 시맨틱 검증기 구현
+- [x] T041 [US2] `backend/src/app/agent/nodes/query_validation.py`에 쿼리 검증 노드 구현 (3단계 점진적 검증)
+- [x] T042 [US2] `backend/src/app/agent/graph.py`에 재시도 로직(최대 3회)이 포함된 검증 노드 추가로 LangGraph 워크플로우 업데이트
 
 **체크포인트**: 사용자 스토리 2 완전 동작 - 모든 위험 쿼리가 사용자 친화적 메시지와 함께 차단됨
 
 ---
 
-## 5단계: 사용자 스토리 3 - 쿼리 검증 및 결과 미리보기 (우선순위: P2)
+## 5단계: 사용자 스토리 3 - 쿼리 검증 및 결과 미리보기 (우선순위: P2) ✅
 
 **목표**: 쿼리 실행 전 사용자 확인을 받는 Human-in-the-Loop 구현
 
@@ -120,23 +120,23 @@
 
 ### 사용자 스토리 3 테스트
 
-- [ ] T043 [P] [US3] `backend/tests/contract/test_confirm_api.py`에 POST /api/chat/confirm 엔드포인트 계약 테스트
-- [ ] T044 [P] [US3] `backend/tests/integration/test_human_in_loop.py`에 Human-in-the-Loop 흐름 통합 테스트
+- [x] T043 [P] [US3] `backend/tests/contract/test_confirm_api.py`에 POST /api/chat/confirm 엔드포인트 계약 테스트
+- [x] T044 [P] [US3] `backend/tests/integration/test_human_in_loop.py`에 Human-in-the-Loop 흐름 통합 테스트
 
 ### 사용자 스토리 3 구현
 
-- [ ] T045 [US3] `backend/src/app/agent/nodes/user_confirmation.py`에 LangGraph interrupt()를 사용한 사용자 확인 노드 구현
-- [ ] T046 [US3] `backend/src/app/agent/graph.py`에 검증 후 확인 interrupt가 포함되도록 LangGraph 워크플로우 업데이트
-- [ ] T047 [US3] `backend/src/app/api/routes/chat.py`에 Command(resume)가 포함된 확인 엔드포인트 구현
-- [ ] T048 [US3] 쿼리 생성 노드에 쿼리 설명 생성 기능 추가 (한국어)
-- [ ] T049 [P] [US3] `frontend/src/components/Chat/QueryPreview.tsx`에 QueryPreview 컴포넌트 구현
-- [ ] T050 [P] [US3] QueryPreview 컴포넌트에 확인 버튼 (실행/취소) 구현
+- [x] T045 [US3] `backend/src/app/agent/nodes/user_confirmation.py`에 LangGraph interrupt()를 사용한 사용자 확인 노드 구현
+- [x] T046 [US3] `backend/src/app/agent/graph.py`에 검증 후 확인 interrupt가 포함되도록 LangGraph 워크플로우 업데이트
+- [x] T047 [US3] `backend/src/app/api/routes/chat.py`에 Command(resume)가 포함된 확인 엔드포인트 구현
+- [x] T048 [US3] 쿼리 생성 노드에 쿼리 설명 생성 기능 추가 (한국어)
+- [x] T049 [P] [US3] `frontend/src/components/Chat/QueryPreview.tsx`에 QueryPreview 컴포넌트 구현
+- [x] T050 [P] [US3] QueryPreview 컴포넌트에 확인 버튼 (실행/취소) 구현
 
 **체크포인트**: 사용자 스토리 3 완전 동작 - 사용자가 쿼리를 실행 전에 미리보고 승인 가능
 
 ---
 
-## 6단계: 사용자 스토리 4 - 오류 상황 안내 (우선순위: P2)
+## 6단계: 사용자 스토리 4 - 오류 상황 안내 (우선순위: P2) ✅
 
 **목표**: 모든 오류 상황에서 비개발자가 이해할 수 있는 한국어 안내 메시지 제공
 
@@ -144,23 +144,23 @@
 
 ### 사용자 스토리 4 테스트
 
-- [ ] T051 [P] [US4] `backend/tests/unit/test_error_messages.py`에 에러 메시지 생성 단위 테스트
-- [ ] T052 [P] [US4] `backend/tests/integration/test_error_handling.py`에 오류 시나리오 통합 테스트
+- [x] T051 [P] [US4] `backend/tests/unit/test_error_messages.py`에 에러 메시지 생성 단위 테스트
+- [x] T052 [P] [US4] `backend/tests/integration/test_error_handling.py`에 오류 시나리오 통합 테스트
 
 ### 사용자 스토리 4 구현
 
-- [ ] T053 [US4] `backend/src/app/errors/messages.py`에 모든 에러 코드에 대한 한국어 에러 메시지 템플릿 정의
-- [ ] T054 [US4] 쿼리 생성 노드에 모호한 쿼리 감지 및 도움말 제안 구현
-- [ ] T055 [US4] 데이터베이스 연결 오류를 사용자 친화적 메시지로 처리
-- [ ] T056 [US4] 빈 결과 집합을 적절한 메시지로 처리 ("조건에 맞는 데이터가 없습니다")
-- [ ] T057 [US4] 쿼리 타임아웃을 더 구체적인 조건 추가 제안과 함께 처리
-- [ ] T058 [P] [US4] `frontend/src/components/common/ErrorMessage.tsx`에 ErrorMessage 컴포넌트 구현
+- [x] T053 [US4] `backend/src/app/errors/messages.py`에 모든 에러 코드에 대한 한국어 에러 메시지 템플릿 정의
+- [x] T054 [US4] 쿼리 생성 노드에 모호한 쿼리 감지 및 도움말 제안 구현
+- [x] T055 [US4] 데이터베이스 연결 오류를 사용자 친화적 메시지로 처리
+- [x] T056 [US4] 빈 결과 집합을 적절한 메시지로 처리 ("조건에 맞는 데이터가 없습니다")
+- [x] T057 [US4] 쿼리 타임아웃을 더 구체적인 조건 추가 제안과 함께 처리
+- [x] T058 [P] [US4] `frontend/src/components/common/ErrorMessage.tsx`에 ErrorMessage 컴포넌트 구현
 
 **체크포인트**: 사용자 스토리 4 완전 동작 - 모든 오류가 사용자 친화적 한국어 메시지로 표시됨
 
 ---
 
-## 7단계: 사용자 스토리 5 - 대화 맥락 유지 (우선순위: P3)
+## 7단계: 사용자 스토리 5 - 대화 맥락 유지 (우선순위: P3) ✅
 
 **목표**: 연속 질문에서 이전 대화 맥락을 유지
 
@@ -168,66 +168,72 @@
 
 ### 사용자 스토리 5 테스트
 
-- [ ] T059 [P] [US5] `backend/tests/integration/test_conversation_context.py`에 맥락 인식 쿼리 통합 테스트
+- [x] T059 [P] [US5] `backend/tests/integration/test_conversation_context.py`에 맥락 인식 쿼리 통합 테스트
 
 ### 사용자 스토리 5 구현
 
-- [ ] T060 [US5] 에이전트 상태에 add_messages 리듀서를 사용한 메시지 히스토리 관리 구현
-- [ ] T061 [US5] 대화 맥락을 포함하도록 쿼리 생성 프롬프트 개선
-- [ ] T062 [US5] `backend/src/app/agent/nodes/query_generation.py`에 맥락 참조 감지 구현 (예: "그중에", "거기서")
-- [ ] T063 [US5] "처음부터 다시" 명령어에 대한 세션 초기화 구현
-- [ ] T064 [US5] 세션 관리자에 세션 타임아웃 처리 (30분) 추가
+- [x] T060 [US5] 에이전트 상태에 add_messages 리듀서를 사용한 메시지 히스토리 관리 구현
+- [x] T061 [US5] 대화 맥락을 포함하도록 쿼리 생성 프롬프트 개선
+- [x] T062 [US5] `backend/src/app/agent/nodes/query_generation.py`에 맥락 참조 감지 구현 (예: "그중에", "거기서")
+- [x] T063 [US5] "처음부터 다시" 명령어에 대한 세션 초기화 구현
+- [x] T064 [US5] 세션 관리자에 세션 타임아웃 처리 (30분) 추가
 
 **체크포인트**: 사용자 스토리 5 완전 동작 - 사용자가 맥락을 유지하며 대화 가능
 
 ---
 
-## 8단계: 프론트엔드 구현
+## 8단계: 프론트엔드 구현 ✅
 
 **목적**: 사용자 상호작용을 위한 웹 채팅 UI
 
-- [ ] T065 [P] `frontend/src/types/index.ts`에 API 스키마와 일치하는 TypeScript 타입 생성
-- [ ] T066 [P] `frontend/src/services/api.ts`에 SSE 지원이 포함된 API 서비스 구현
-- [ ] T067 [P] `frontend/src/hooks/useSession.ts`에 useSession 훅 생성
-- [ ] T068 [P] `frontend/src/hooks/useChat.ts`에 SSE 처리가 포함된 useChat 훅 생성
-- [ ] T069 `frontend/src/components/Chat/ChatContainer.tsx`에 ChatContainer 컴포넌트 구현
-- [ ] T070 [P] `frontend/src/components/Chat/MessageList.tsx`에 MessageList 컴포넌트 구현
-- [ ] T071 [P] `frontend/src/components/Chat/MessageInput.tsx`에 MessageInput 컴포넌트 구현
-- [ ] T072 [P] `frontend/src/components/Chat/ResultTable.tsx`에 페이지네이션이 포함된 ResultTable 컴포넌트 구현
-- [ ] T073 [P] `frontend/src/components/common/LoadingSpinner.tsx`에 LoadingSpinner 컴포넌트 구현
-- [ ] T074 `frontend/src/App.tsx`에 React Query 프로바이더와 메인 레이아웃이 포함된 App.tsx 생성
-- [ ] T075 [P] `frontend/tailwind.config.js`에 Tailwind CSS 설정
-- [ ] T076 [P] `frontend/vite.config.ts`에 Vite 설정
+- [x] T065 [P] `frontend/src/types/index.ts`에 API 스키마와 일치하는 TypeScript 타입 생성
+- [x] T066 [P] `frontend/src/services/api.ts`에 SSE 지원이 포함된 API 서비스 구현
+- [x] T067 [P] `frontend/src/hooks/useSession.ts`에 useSession 훅 생성
+- [x] T068 [P] `frontend/src/hooks/useChat.ts`에 SSE 처리가 포함된 useChat 훅 생성
+- [x] T069 `frontend/src/components/Chat/ChatContainer.tsx`에 ChatContainer 컴포넌트 구현
+- [x] T070 [P] `frontend/src/components/Chat/MessageList.tsx`에 MessageList 컴포넌트 구현
+- [x] T071 [P] `frontend/src/components/Chat/MessageInput.tsx`에 MessageInput 컴포넌트 구현
+- [x] T072 [P] `frontend/src/components/Chat/ResultTable.tsx`에 페이지네이션이 포함된 ResultTable 컴포넌트 구현
+- [x] T073 [P] `frontend/src/components/common/LoadingSpinner.tsx`에 LoadingSpinner 컴포넌트 구현
+- [x] T074 `frontend/src/App.tsx`에 React Query 프로바이더와 메인 레이아웃이 포함된 App.tsx 생성
+- [x] T075 [P] `frontend/tailwind.config.js`에 Tailwind CSS 설정
+- [x] T076 [P] `frontend/vite.config.ts`에 Vite 설정
+
+**체크포인트**: 프론트엔드 완전 동작 - 웹 UI를 통한 채팅 인터페이스 제공
 
 ---
 
-## 9단계: API 엔드포인트 완성
+## 9단계: API 엔드포인트 완성 ✅
 
 **목적**: OpenAPI 계약에 따른 추가 API 엔드포인트
 
-- [ ] T077 [P] `backend/src/app/api/routes/session.py`에 세션 생성 엔드포인트 구현
-- [ ] T078 [P] `backend/src/app/api/routes/session.py`에 세션 조회 엔드포인트 구현
-- [ ] T079 [P] `backend/src/app/api/routes/session.py`에 세션 종료 엔드포인트 구현
-- [ ] T080 [P] `backend/src/app/api/routes/schema.py`에 스키마 조회 엔드포인트 구현
-- [ ] T081 [P] `backend/src/app/api/routes/schema.py`에 스키마 갱신 엔드포인트 구현
-- [ ] T082 main.py에 모든 라우터 등록
+- [x] T077 [P] `backend/src/app/api/routes/session.py`에 세션 생성 엔드포인트 구현
+- [x] T078 [P] `backend/src/app/api/routes/session.py`에 세션 조회 엔드포인트 구현
+- [x] T079 [P] `backend/src/app/api/routes/session.py`에 세션 종료 엔드포인트 구현
+- [x] T080 [P] `backend/src/app/api/routes/schema.py`에 스키마 조회 엔드포인트 구현
+- [x] T081 [P] `backend/src/app/api/routes/schema.py`에 스키마 갱신 엔드포인트 구현
+- [x] T082 main.py에 모든 라우터 등록
+
+**체크포인트**: API 완성 - 모든 REST API 엔드포인트 제공
 
 ---
 
-## 10단계: 마무리 및 공통 관심사
+## 10단계: 마무리 및 공통 관심사 ✅
 
 **목적**: 여러 사용자 스토리에 영향을 미치는 개선 사항
 
-- [ ] T083 [P] `backend/src/app/config.py`에 구조화된 로깅 설정 추가
-- [ ] T084 [P] `backend/src/app/main.py`에 요청 로깅 미들웨어 추가
+- [x] T083 [P] `backend/src/app/config.py`에 구조화된 로깅 설정 추가
+- [x] T084 [P] `backend/src/app/main.py`에 요청 로깅 미들웨어 추가
 - [ ] T085 mypy로 코드 정리 및 타입 어노테이션 검증
 - [ ] T086 [P] 모든 Python 파일에 ruff 린팅 및 포매팅 실행
-- [ ] T087 [P] `backend/Dockerfile`에 백엔드용 Dockerfile 생성
-- [ ] T088 [P] `frontend/Dockerfile`에 프론트엔드용 Dockerfile 생성
-- [ ] T089 [P] 로컬 개발용 docker-compose.yml 생성
+- [x] T087 [P] `backend/Dockerfile`에 백엔드용 Dockerfile 생성
+- [x] T088 [P] `frontend/Dockerfile`에 프론트엔드용 Dockerfile 생성
+- [x] T089 [P] 로컬 개발용 docker-compose.yml 생성
 - [ ] T090 quickstart.md 검증 실행 (모든 단계 동작 확인)
 - [ ] T091 보안 검토: 모든 SQL 쿼리가 파라미터화된 실행을 사용하는지 확인
 - [ ] T092 성능 테스트: 10초 응답 시간 목표 달성 확인
+
+**체크포인트**: 배포 준비 완료 - Docker 기반 배포 가능
 
 ---
 
