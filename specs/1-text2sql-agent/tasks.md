@@ -112,7 +112,7 @@
 
 ---
 
-## 5단계: 사용자 스토리 3 - 쿼리 검증 및 결과 미리보기 (우선순위: P2)
+## 5단계: 사용자 스토리 3 - 쿼리 검증 및 결과 미리보기 (우선순위: P2) ✅
 
 **목표**: 쿼리 실행 전 사용자 확인을 받는 Human-in-the-Loop 구현
 
@@ -120,17 +120,17 @@
 
 ### 사용자 스토리 3 테스트
 
-- [ ] T043 [P] [US3] `backend/tests/contract/test_confirm_api.py`에 POST /api/chat/confirm 엔드포인트 계약 테스트
-- [ ] T044 [P] [US3] `backend/tests/integration/test_human_in_loop.py`에 Human-in-the-Loop 흐름 통합 테스트
+- [x] T043 [P] [US3] `backend/tests/contract/test_confirm_api.py`에 POST /api/chat/confirm 엔드포인트 계약 테스트
+- [x] T044 [P] [US3] `backend/tests/integration/test_human_in_loop.py`에 Human-in-the-Loop 흐름 통합 테스트
 
 ### 사용자 스토리 3 구현
 
-- [ ] T045 [US3] `backend/src/app/agent/nodes/user_confirmation.py`에 LangGraph interrupt()를 사용한 사용자 확인 노드 구현
-- [ ] T046 [US3] `backend/src/app/agent/graph.py`에 검증 후 확인 interrupt가 포함되도록 LangGraph 워크플로우 업데이트
-- [ ] T047 [US3] `backend/src/app/api/routes/chat.py`에 Command(resume)가 포함된 확인 엔드포인트 구현
-- [ ] T048 [US3] 쿼리 생성 노드에 쿼리 설명 생성 기능 추가 (한국어)
-- [ ] T049 [P] [US3] `frontend/src/components/Chat/QueryPreview.tsx`에 QueryPreview 컴포넌트 구현
-- [ ] T050 [P] [US3] QueryPreview 컴포넌트에 확인 버튼 (실행/취소) 구현
+- [x] T045 [US3] `backend/src/app/agent/nodes/user_confirmation.py`에 LangGraph interrupt()를 사용한 사용자 확인 노드 구현
+- [x] T046 [US3] `backend/src/app/agent/graph.py`에 검증 후 확인 interrupt가 포함되도록 LangGraph 워크플로우 업데이트
+- [x] T047 [US3] `backend/src/app/api/routes/chat.py`에 Command(resume)가 포함된 확인 엔드포인트 구현
+- [x] T048 [US3] 쿼리 생성 노드에 쿼리 설명 생성 기능 추가 (한국어)
+- [x] T049 [P] [US3] `frontend/src/components/Chat/QueryPreview.tsx`에 QueryPreview 컴포넌트 구현
+- [x] T050 [P] [US3] QueryPreview 컴포넌트에 확인 버튼 (실행/취소) 구현
 
 **체크포인트**: 사용자 스토리 3 완전 동작 - 사용자가 쿼리를 실행 전에 미리보고 승인 가능
 

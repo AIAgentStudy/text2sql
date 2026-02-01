@@ -62,6 +62,10 @@ class Settings(BaseSettings):
         default=True,
         description="LLM 시맨틱 검증 활성화 여부",
     )
+    enable_human_in_the_loop: bool = Field(
+        default=True,
+        description="Human-in-the-Loop 사용자 확인 활성화 여부",
+    )
 
     # === 로깅 설정 ===
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(

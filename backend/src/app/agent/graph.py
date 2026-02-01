@@ -15,6 +15,7 @@ from app.agent.nodes.query_generation import query_generation_node
 from app.agent.nodes.query_validation import query_validation_node
 from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
+from app.agent.nodes.user_confirmation import user_confirmation_node
 from app.agent.state import Text2SQLAgentState
 from app.config import get_settings
 
@@ -36,17 +37,17 @@ def should_continue_after_generation(
 
 def should_continue_after_validation(
     state: Text2SQLAgentState,
-) -> Literal["execute", "retry_generation", "format_error"]:
+) -> Literal["confirm", "retry_generation", "format_error"]:
     """
     쿼리 검증 후 다음 단계 결정
 
-    검증 통과 시 실행, 재시도 가능하면 재생성, 아니면 에러 포맷팅
+    검증 통과 시 사용자 확인, 재시도 가능하면 재생성, 아니면 에러 포맷팅
     """
     settings = get_settings()
 
-    # 검증 통과
+    # 검증 통과 - 사용자 확인으로 이동
     if state.get("is_query_valid"):
-        return "execute"
+        return "confirm"
 
     # 재시도 가능 여부 확인
     attempt = state.get("generation_attempt", 0)
@@ -68,6 +69,25 @@ def should_continue_after_validation(
     return "format_error"
 
 
+def should_continue_after_confirmation(
+    state: Text2SQLAgentState,
+) -> Literal["execute", "format_error"]:
+    """
+    사용자 확인 후 다음 단계 결정
+
+    승인 시 실행, 거부 시 에러 포맷팅
+    """
+    user_approved = state.get("user_approved")
+
+    if user_approved is True:
+        logger.info("사용자 승인 확인, 쿼리 실행으로 이동")
+        return "execute"
+
+    # 거부 또는 None인 경우
+    logger.info("사용자 거부 또는 대기 중, 에러 포맷팅으로 이동")
+    return "format_error"
+
+
 def should_continue_after_execution(
     state: Text2SQLAgentState,
 ) -> Literal["format_result"]:
@@ -84,9 +104,9 @@ def build_graph() -> StateGraph:
     Text2SQL 에이전트 그래프 빌드
 
     워크플로우:
-    START → 스키마 조회 → 쿼리 생성 → 쿼리 검증 → 쿼리 실행 → 응답 포맷팅 → END
-                              ↑              ↓ (재시도)
-                              └──────────────┘
+    START → 스키마 조회 → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
+                              ↑              ↓ (재시도)     ↓ (interrupt)
+                              └──────────────┘              └─→ 확인 대기
                                         ↓ (실패 시)
                                   응답 포맷팅 → END
 
@@ -102,6 +122,7 @@ def build_graph() -> StateGraph:
     graph.add_node("schema_retrieval", schema_retrieval_node)
     graph.add_node("query_generation", query_generation_node)
     graph.add_node("query_validation", query_validation_node)
+    graph.add_node("user_confirmation", user_confirmation_node)
     graph.add_node("query_execution", query_execution_node)
     graph.add_node("response_formatting", response_formatting_node)
 
@@ -122,13 +143,23 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # 쿼리 검증 → 조건부 분기 (실행, 재생성, 또는 에러)
+    # 쿼리 검증 → 조건부 분기 (확인, 재생성, 또는 에러)
     graph.add_conditional_edges(
         "query_validation",
         should_continue_after_validation,
         {
-            "execute": "query_execution",
+            "confirm": "user_confirmation",
             "retry_generation": "query_generation",
+            "format_error": "response_formatting",
+        },
+    )
+
+    # 사용자 확인 → 조건부 분기 (실행 또는 에러)
+    graph.add_conditional_edges(
+        "user_confirmation",
+        should_continue_after_confirmation,
+        {
+            "execute": "query_execution",
             "format_error": "response_formatting",
         },
     )
@@ -149,22 +180,36 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def compile_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
+def compile_graph(
+    checkpointer: MemorySaver | None = None,
+    interrupt_before_confirmation: bool = True,
+) -> StateGraph:
     """
     Text2SQL 에이전트 그래프 컴파일
 
     Args:
         checkpointer: 상태 체크포인터 (세션 지속성용)
+        interrupt_before_confirmation: 사용자 확인 전 interrupt 활성화
 
     Returns:
         컴파일된 그래프
     """
     graph = build_graph()
 
+    # interrupt 노드 설정
+    interrupt_nodes = []
+    if interrupt_before_confirmation:
+        interrupt_nodes.append("user_confirmation")
+
     if checkpointer:
-        compiled = graph.compile(checkpointer=checkpointer)
+        compiled = graph.compile(
+            checkpointer=checkpointer,
+            interrupt_before=interrupt_nodes if interrupt_nodes else None,
+        )
     else:
-        compiled = graph.compile()
+        compiled = graph.compile(
+            interrupt_before=interrupt_nodes if interrupt_nodes else None,
+        )
 
     logger.info("Text2SQL 에이전트 그래프 컴파일 완료")
     return compiled
