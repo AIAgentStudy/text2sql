@@ -72,15 +72,12 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
 
     # 라우터 등록
-    from app.api.routes import chat, health
+    from app.api.routes import chat, health, schema, session
 
     app.include_router(health.router, prefix="/api", tags=["Health"])
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
-
-    # 추가 라우터는 여기에 등록 (US3 이후)
-    # from app.api.routes import session, schema
-    # app.include_router(session.router, prefix="/api", tags=["Session"])
-    # app.include_router(schema.router, prefix="/api", tags=["Schema"])
+    app.include_router(session.router, prefix="/api", tags=["Session"])
+    app.include_router(schema.router, prefix="/api", tags=["Schema"])
 
     return app
 
