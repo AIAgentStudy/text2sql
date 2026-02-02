@@ -40,7 +40,6 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
     isLoading,
     currentStatus,
     awaitingConfirmation,
-    pendingQueryId,
     sendMessage,
     confirmQuery,
     clearChat,
@@ -113,7 +112,6 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
       <div className="min-h-0 flex-1 overflow-hidden">
         <MessageList
           messages={messages}
-          pendingQueryId={pendingQueryId}
           onApproveQuery={handleApproveQuery}
           onRejectQuery={handleRejectQuery}
           isLoading={isLoading}

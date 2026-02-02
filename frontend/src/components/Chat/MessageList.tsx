@@ -14,8 +14,6 @@ import { StatusSpinner } from '../common/LoadingSpinner';
 interface MessageListProps {
   /** 메시지 목록 */
   messages: ChatMessage[];
-  /** 확인 대기 중인 쿼리 ID */
-  pendingQueryId?: string | null;
   /** 쿼리 승인 핸들러 */
   onApproveQuery?: (queryId: string, modifiedQuery?: string) => void;
   /** 쿼리 거부 핸들러 */
@@ -28,7 +26,6 @@ interface MessageListProps {
 
 export function MessageList({
   messages,
-  pendingQueryId,
   onApproveQuery,
   onRejectQuery,
   isLoading = false,
