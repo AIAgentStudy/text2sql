@@ -51,15 +51,13 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_warehouses_code ON warehouses(code);
-        CREATE INDEX idx_warehouses_is_active ON warehouses(is_active);
-
-        COMMENT ON TABLE warehouses IS '창고 정보';
-        COMMENT ON COLUMN warehouses.code IS '창고 코드';
-        COMMENT ON COLUMN warehouses.capacity_sqm IS '창고 면적 (제곱미터)';
+        )
     """)
+    op.execute("CREATE INDEX idx_warehouses_code ON warehouses(code)")
+    op.execute("CREATE INDEX idx_warehouses_is_active ON warehouses(is_active)")
+    op.execute("COMMENT ON TABLE warehouses IS '창고 정보'")
+    op.execute("COMMENT ON COLUMN warehouses.code IS '창고 코드'")
+    op.execute("COMMENT ON COLUMN warehouses.capacity_sqm IS '창고 면적 (제곱미터)'")
 
     # === warehouse_zones 테이블 ===
     op.execute("""
@@ -75,14 +73,12 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(warehouse_id, code)
-        );
-
-        CREATE INDEX idx_warehouse_zones_warehouse_id ON warehouse_zones(warehouse_id);
-
-        COMMENT ON TABLE warehouse_zones IS '창고 구역';
-        COMMENT ON COLUMN warehouse_zones.zone_type IS '구역 유형 (일반, 냉장, 냉동, 위험물)';
-        COMMENT ON COLUMN warehouse_zones.capacity_units IS '수용 가능 유닛 수';
+        )
     """)
+    op.execute("CREATE INDEX idx_warehouse_zones_warehouse_id ON warehouse_zones(warehouse_id)")
+    op.execute("COMMENT ON TABLE warehouse_zones IS '창고 구역'")
+    op.execute("COMMENT ON COLUMN warehouse_zones.zone_type IS '구역 유형 (일반, 냉장, 냉동, 위험물)'")
+    op.execute("COMMENT ON COLUMN warehouse_zones.capacity_units IS '수용 가능 유닛 수'")
 
     # === product_categories 테이블 ===
     op.execute("""
@@ -93,13 +89,11 @@ def upgrade() -> None:
             parent_id INTEGER REFERENCES product_categories(id),
             description TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_product_categories_parent_id ON product_categories(parent_id);
-
-        COMMENT ON TABLE product_categories IS '제품 카테고리';
-        COMMENT ON COLUMN product_categories.parent_id IS '상위 카테고리 ID';
+        )
     """)
+    op.execute("CREATE INDEX idx_product_categories_parent_id ON product_categories(parent_id)")
+    op.execute("COMMENT ON TABLE product_categories IS '제품 카테고리'")
+    op.execute("COMMENT ON COLUMN product_categories.parent_id IS '상위 카테고리 ID'")
 
     # === products 테이블 ===
     op.execute("""
@@ -118,16 +112,14 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_products_sku ON products(sku);
-        CREATE INDEX idx_products_category_id ON products(category_id);
-        CREATE INDEX idx_products_is_active ON products(is_active);
-
-        COMMENT ON TABLE products IS '제품 마스터';
-        COMMENT ON COLUMN products.sku IS '재고관리단위 코드';
-        COMMENT ON COLUMN products.unit IS '단위 (EA, BOX, PALLET 등)';
+        )
     """)
+    op.execute("CREATE INDEX idx_products_sku ON products(sku)")
+    op.execute("CREATE INDEX idx_products_category_id ON products(category_id)")
+    op.execute("CREATE INDEX idx_products_is_active ON products(is_active)")
+    op.execute("COMMENT ON TABLE products IS '제품 마스터'")
+    op.execute("COMMENT ON COLUMN products.sku IS '재고관리단위 코드'")
+    op.execute("COMMENT ON COLUMN products.unit IS '단위 (EA, BOX, PALLET 등)'")
 
     # === inventory 테이블 ===
     op.execute("""
@@ -144,17 +136,15 @@ def upgrade() -> None:
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(product_id, warehouse_id, zone_id, lot_number)
-        );
-
-        CREATE INDEX idx_inventory_product_id ON inventory(product_id);
-        CREATE INDEX idx_inventory_warehouse_id ON inventory(warehouse_id);
-        CREATE INDEX idx_inventory_zone_id ON inventory(zone_id);
-
-        COMMENT ON TABLE inventory IS '재고 현황';
-        COMMENT ON COLUMN inventory.quantity IS '실제 재고 수량';
-        COMMENT ON COLUMN inventory.reserved_quantity IS '예약된 수량';
-        COMMENT ON COLUMN inventory.lot_number IS '로트 번호';
+        )
     """)
+    op.execute("CREATE INDEX idx_inventory_product_id ON inventory(product_id)")
+    op.execute("CREATE INDEX idx_inventory_warehouse_id ON inventory(warehouse_id)")
+    op.execute("CREATE INDEX idx_inventory_zone_id ON inventory(zone_id)")
+    op.execute("COMMENT ON TABLE inventory IS '재고 현황'")
+    op.execute("COMMENT ON COLUMN inventory.quantity IS '실제 재고 수량'")
+    op.execute("COMMENT ON COLUMN inventory.reserved_quantity IS '예약된 수량'")
+    op.execute("COMMENT ON COLUMN inventory.lot_number IS '로트 번호'")
 
     # === inventory_transactions 테이블 ===
     op.execute("""
@@ -168,16 +158,14 @@ def upgrade() -> None:
             notes TEXT,
             performed_by INTEGER REFERENCES users(id),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_inv_trans_inventory_id ON inventory_transactions(inventory_id);
-        CREATE INDEX idx_inv_trans_type ON inventory_transactions(transaction_type);
-        CREATE INDEX idx_inv_trans_created_at ON inventory_transactions(created_at);
-
-        COMMENT ON TABLE inventory_transactions IS '재고 입출고 이력';
-        COMMENT ON COLUMN inventory_transactions.transaction_type IS '거래 유형 (IN, OUT, ADJUST, TRANSFER)';
-        COMMENT ON COLUMN inventory_transactions.reference_type IS '참조 문서 유형 (ORDER, SHIPMENT, ADJUSTMENT)';
+        )
     """)
+    op.execute("CREATE INDEX idx_inv_trans_inventory_id ON inventory_transactions(inventory_id)")
+    op.execute("CREATE INDEX idx_inv_trans_type ON inventory_transactions(transaction_type)")
+    op.execute("CREATE INDEX idx_inv_trans_created_at ON inventory_transactions(created_at)")
+    op.execute("COMMENT ON TABLE inventory_transactions IS '재고 입출고 이력'")
+    op.execute("COMMENT ON COLUMN inventory_transactions.transaction_type IS '거래 유형 (IN, OUT, ADJUST, TRANSFER)'")
+    op.execute("COMMENT ON COLUMN inventory_transactions.reference_type IS '참조 문서 유형 (ORDER, SHIPMENT, ADJUSTMENT)'")
 
     # === customers 테이블 ===
     op.execute("""
@@ -197,14 +185,12 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_customers_code ON customers(code);
-        CREATE INDEX idx_customers_is_active ON customers(is_active);
-
-        COMMENT ON TABLE customers IS '고객 정보';
-        COMMENT ON COLUMN customers.customer_type IS '고객 유형 (regular, vip, wholesale)';
+        )
     """)
+    op.execute("CREATE INDEX idx_customers_code ON customers(code)")
+    op.execute("CREATE INDEX idx_customers_is_active ON customers(is_active)")
+    op.execute("COMMENT ON TABLE customers IS '고객 정보'")
+    op.execute("COMMENT ON COLUMN customers.customer_type IS '고객 유형 (regular, vip, wholesale)'")
 
     # === orders 테이블 ===
     op.execute("""
@@ -222,16 +208,14 @@ def upgrade() -> None:
             notes TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_orders_order_number ON orders(order_number);
-        CREATE INDEX idx_orders_customer_id ON orders(customer_id);
-        CREATE INDEX idx_orders_status ON orders(status);
-        CREATE INDEX idx_orders_order_date ON orders(order_date);
-
-        COMMENT ON TABLE orders IS '주문';
-        COMMENT ON COLUMN orders.status IS '주문 상태 (pending, confirmed, processing, shipped, delivered, cancelled)';
+        )
     """)
+    op.execute("CREATE INDEX idx_orders_order_number ON orders(order_number)")
+    op.execute("CREATE INDEX idx_orders_customer_id ON orders(customer_id)")
+    op.execute("CREATE INDEX idx_orders_status ON orders(status)")
+    op.execute("CREATE INDEX idx_orders_order_date ON orders(order_date)")
+    op.execute("COMMENT ON TABLE orders IS '주문'")
+    op.execute("COMMENT ON COLUMN orders.status IS '주문 상태 (pending, confirmed, processing, shipped, delivered, cancelled)'")
 
     # === order_items 테이블 ===
     op.execute("""
@@ -244,13 +228,11 @@ def upgrade() -> None:
             discount_percent DECIMAL(5, 2) DEFAULT 0,
             line_total DECIMAL(15, 2),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-        CREATE INDEX idx_order_items_product_id ON order_items(product_id);
-
-        COMMENT ON TABLE order_items IS '주문 상세';
+        )
     """)
+    op.execute("CREATE INDEX idx_order_items_order_id ON order_items(order_id)")
+    op.execute("CREATE INDEX idx_order_items_product_id ON order_items(product_id)")
+    op.execute("COMMENT ON TABLE order_items IS '주문 상세'")
 
     # === carriers 테이블 ===
     op.execute("""
@@ -266,14 +248,12 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_carriers_code ON carriers(code);
-        CREATE INDEX idx_carriers_is_active ON carriers(is_active);
-
-        COMMENT ON TABLE carriers IS '운송사';
-        COMMENT ON COLUMN carriers.service_types IS '서비스 유형 배열 (express, standard, same_day)';
+        )
     """)
+    op.execute("CREATE INDEX idx_carriers_code ON carriers(code)")
+    op.execute("CREATE INDEX idx_carriers_is_active ON carriers(is_active)")
+    op.execute("COMMENT ON TABLE carriers IS '운송사'")
+    op.execute("COMMENT ON COLUMN carriers.service_types IS '서비스 유형 배열 (express, standard, same_day)'")
 
     # === vehicles 테이블 ===
     op.execute("""
@@ -291,15 +271,13 @@ def upgrade() -> None:
             next_maintenance DATE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_vehicles_carrier_id ON vehicles(carrier_id);
-        CREATE INDEX idx_vehicles_status ON vehicles(status);
-
-        COMMENT ON TABLE vehicles IS '차량 정보';
-        COMMENT ON COLUMN vehicles.vehicle_type IS '차량 유형 (truck_small, truck_medium, truck_large, van)';
-        COMMENT ON COLUMN vehicles.status IS '차량 상태 (available, in_use, maintenance, retired)';
+        )
     """)
+    op.execute("CREATE INDEX idx_vehicles_carrier_id ON vehicles(carrier_id)")
+    op.execute("CREATE INDEX idx_vehicles_status ON vehicles(status)")
+    op.execute("COMMENT ON TABLE vehicles IS '차량 정보'")
+    op.execute("COMMENT ON COLUMN vehicles.vehicle_type IS '차량 유형 (truck_small, truck_medium, truck_large, van)'")
+    op.execute("COMMENT ON COLUMN vehicles.status IS '차량 상태 (available, in_use, maintenance, retired)'")
 
     # === shipments 테이블 ===
     op.execute("""
@@ -323,16 +301,14 @@ def upgrade() -> None:
             notes TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_shipments_shipment_number ON shipments(shipment_number);
-        CREATE INDEX idx_shipments_order_id ON shipments(order_id);
-        CREATE INDEX idx_shipments_status ON shipments(status);
-        CREATE INDEX idx_shipments_driver_id ON shipments(driver_id);
-
-        COMMENT ON TABLE shipments IS '배송';
-        COMMENT ON COLUMN shipments.status IS '배송 상태 (pending, picked_up, in_transit, out_for_delivery, delivered, returned)';
+        )
     """)
+    op.execute("CREATE INDEX idx_shipments_shipment_number ON shipments(shipment_number)")
+    op.execute("CREATE INDEX idx_shipments_order_id ON shipments(order_id)")
+    op.execute("CREATE INDEX idx_shipments_status ON shipments(status)")
+    op.execute("CREATE INDEX idx_shipments_driver_id ON shipments(driver_id)")
+    op.execute("COMMENT ON TABLE shipments IS '배송'")
+    op.execute("COMMENT ON COLUMN shipments.status IS '배송 상태 (pending, picked_up, in_transit, out_for_delivery, delivered, returned)'")
 
     # === shipment_items 테이블 ===
     op.execute("""
@@ -343,14 +319,12 @@ def upgrade() -> None:
             quantity INTEGER NOT NULL,
             picked_quantity INTEGER DEFAULT 0,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_shipment_items_shipment_id ON shipment_items(shipment_id);
-        CREATE INDEX idx_shipment_items_product_id ON shipment_items(product_id);
-
-        COMMENT ON TABLE shipment_items IS '배송 상세';
-        COMMENT ON COLUMN shipment_items.picked_quantity IS '피킹 완료 수량';
+        )
     """)
+    op.execute("CREATE INDEX idx_shipment_items_shipment_id ON shipment_items(shipment_id)")
+    op.execute("CREATE INDEX idx_shipment_items_product_id ON shipment_items(product_id)")
+    op.execute("COMMENT ON TABLE shipment_items IS '배송 상세'")
+    op.execute("COMMENT ON COLUMN shipment_items.picked_quantity IS '피킹 완료 수량'")
 
     # === delivery_routes 테이블 ===
     op.execute("""
@@ -368,16 +342,14 @@ def upgrade() -> None:
             total_stops INTEGER DEFAULT 0,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_delivery_routes_route_date ON delivery_routes(route_date);
-        CREATE INDEX idx_delivery_routes_vehicle_id ON delivery_routes(vehicle_id);
-        CREATE INDEX idx_delivery_routes_driver_id ON delivery_routes(driver_id);
-        CREATE INDEX idx_delivery_routes_status ON delivery_routes(status);
-
-        COMMENT ON TABLE delivery_routes IS '배송 경로';
-        COMMENT ON COLUMN delivery_routes.status IS '경로 상태 (planned, in_progress, completed, cancelled)';
+        )
     """)
+    op.execute("CREATE INDEX idx_delivery_routes_route_date ON delivery_routes(route_date)")
+    op.execute("CREATE INDEX idx_delivery_routes_vehicle_id ON delivery_routes(vehicle_id)")
+    op.execute("CREATE INDEX idx_delivery_routes_driver_id ON delivery_routes(driver_id)")
+    op.execute("CREATE INDEX idx_delivery_routes_status ON delivery_routes(status)")
+    op.execute("COMMENT ON TABLE delivery_routes IS '배송 경로'")
+    op.execute("COMMENT ON COLUMN delivery_routes.status IS '경로 상태 (planned, in_progress, completed, cancelled)'")
 
     # === route_stops 테이블 ===
     op.execute("""
@@ -396,15 +368,13 @@ def upgrade() -> None:
             status VARCHAR(20) DEFAULT 'pending',
             notes TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_route_stops_route_id ON route_stops(route_id);
-        CREATE INDEX idx_route_stops_shipment_id ON route_stops(shipment_id);
-
-        COMMENT ON TABLE route_stops IS '경로별 정류장';
-        COMMENT ON COLUMN route_stops.stop_sequence IS '정류 순서';
-        COMMENT ON COLUMN route_stops.status IS '정류 상태 (pending, arrived, completed, skipped)';
+        )
     """)
+    op.execute("CREATE INDEX idx_route_stops_route_id ON route_stops(route_id)")
+    op.execute("CREATE INDEX idx_route_stops_shipment_id ON route_stops(shipment_id)")
+    op.execute("COMMENT ON TABLE route_stops IS '경로별 정류장'")
+    op.execute("COMMENT ON COLUMN route_stops.stop_sequence IS '정류 순서'")
+    op.execute("COMMENT ON COLUMN route_stops.status IS '정류 상태 (pending, arrived, completed, skipped)'")
 
     # === 물류 테이블 권한 설정 ===
     # Admin, Manager, Viewer 모두 물류 테이블 접근 가능
