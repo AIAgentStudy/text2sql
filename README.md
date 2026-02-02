@@ -33,7 +33,7 @@ Text2SQL Agent는 비개발자도 자연어로 데이터베이스를 조회할 �
 
 ### Infrastructure
 - **Docker** - 컨테이너화
-- **Nginx** - 프론트엔드 서빙 및 리버스 프록시
+- **serve** - 프론트엔드 정적 파일 서빙
 
 ## 프로젝트 구조
 
@@ -165,9 +165,9 @@ npm run dev
 
 ## 지원 LLM
 
-- **OpenAI**: GPT-4o, GPT-4o-mini (기본)
-- **Anthropic**: Claude 3.5 Sonnet
-- **Google**: Gemini 1.5 Pro
+- **OpenAI**: GPT-4o-mini (기본), GPT-5-mini (검증용)
+- **Anthropic**: Claude Sonnet 4.5, Claude Haiku 4.5
+- **Google**: Gemini 2.5 Flash, Gemini 2.5 Flash Lite
 
 ## 환경 변수
 

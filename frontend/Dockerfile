@@ -1,10 +1,7 @@
 # Text2SQL Agent Frontend Dockerfile
-# Node.js 20 기반 멀티스테이지 빌드
+# Node.js 20 기반 단일 스테이지 빌드 (serve 사용)
 
-# -------------------------------------------
-# Builder 스테이지: 빌드
-# -------------------------------------------
-FROM node:20-slim AS builder
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -24,30 +21,15 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 # 프로덕션 빌드
 RUN npm run build
 
-# -------------------------------------------
-# Production 스테이지: Nginx로 정적 파일 서빙
-# -------------------------------------------
-FROM nginx:alpine AS production
-
-# Nginx 설정 복사
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# 빌드된 파일 복사
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# 비루트 사용자로 실행 (Nginx alpine 이미지 지원)
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid
+# serve 패키지 전역 설치
+RUN npm install -g serve
 
 # 포트 노출
-EXPOSE 80
+EXPOSE 3000
 
 # 헬스체크
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost/ || exit 1
+    CMD node -e "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Nginx 실행
-CMD ["nginx", "-g", "daemon off;"]
+# serve로 정적 파일 서빙 (SPA 모드)
+CMD ["serve", "-s", "dist", "-l", "3000"]

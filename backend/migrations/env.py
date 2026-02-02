@@ -41,7 +41,7 @@ def get_database_url() -> str:
             "DB_USER, DB_PASSWORD, DB_NAME 환경 변수가 모두 설정되어야 합니다."
         )
 
-    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    return f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 
 def run_migrations_offline() -> None:
