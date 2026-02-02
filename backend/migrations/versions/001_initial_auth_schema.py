@@ -35,17 +35,15 @@ def upgrade() -> None:
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_users_email ON users(email);
-        CREATE INDEX idx_users_is_active ON users(is_active);
-
-        COMMENT ON TABLE users IS '사용자 정보';
-        COMMENT ON COLUMN users.email IS '이메일 (로그인 ID)';
-        COMMENT ON COLUMN users.password_hash IS 'bcrypt 해시된 비밀번호';
-        COMMENT ON COLUMN users.name IS '사용자 이름';
-        COMMENT ON COLUMN users.is_active IS '활성 상태';
+        )
     """)
+    op.execute("CREATE INDEX idx_users_email ON users(email)")
+    op.execute("CREATE INDEX idx_users_is_active ON users(is_active)")
+    op.execute("COMMENT ON TABLE users IS '사용자 정보'")
+    op.execute("COMMENT ON COLUMN users.email IS '이메일 (로그인 ID)'")
+    op.execute("COMMENT ON COLUMN users.password_hash IS 'bcrypt 해시된 비밀번호'")
+    op.execute("COMMENT ON COLUMN users.name IS '사용자 이름'")
+    op.execute("COMMENT ON COLUMN users.is_active IS '활성 상태'")
 
     # === roles 테이블 ===
     op.execute("""
@@ -54,17 +52,17 @@ def upgrade() -> None:
             name VARCHAR(50) UNIQUE NOT NULL,
             description VARCHAR(255),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        COMMENT ON TABLE roles IS '사용자 역할';
-        COMMENT ON COLUMN roles.name IS '역할명 (admin, manager, viewer)';
-        COMMENT ON COLUMN roles.description IS '역할 설명';
-
-        -- 기본 역할 생성
+        )
+    """)
+    op.execute("COMMENT ON TABLE roles IS '사용자 역할'")
+    op.execute("COMMENT ON COLUMN roles.name IS '역할명 (admin, manager, viewer)'")
+    op.execute("COMMENT ON COLUMN roles.description IS '역할 설명'")
+    # 기본 역할 생성
+    op.execute("""
         INSERT INTO roles (name, description) VALUES
             ('admin', '시스템 관리자 - 모든 테이블 접근 가능'),
             ('manager', '매니저 - 물류 운영 테이블 접근 가능'),
-            ('viewer', '조회자 - 물류 운영 테이블 읽기 전용');
+            ('viewer', '조회자 - 물류 운영 테이블 읽기 전용')
     """)
 
     # === user_roles 테이블 ===
@@ -75,13 +73,11 @@ def upgrade() -> None:
             role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, role_id)
-        );
-
-        CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
-        CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
-
-        COMMENT ON TABLE user_roles IS '사용자-역할 매핑';
+        )
     """)
+    op.execute("CREATE INDEX idx_user_roles_user_id ON user_roles(user_id)")
+    op.execute("CREATE INDEX idx_user_roles_role_id ON user_roles(role_id)")
+    op.execute("COMMENT ON TABLE user_roles IS '사용자-역할 매핑'")
 
     # === table_permissions 테이블 ===
     op.execute("""
@@ -93,15 +89,13 @@ def upgrade() -> None:
             can_write BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(role_id, table_name)
-        );
-
-        CREATE INDEX idx_table_permissions_role_id ON table_permissions(role_id);
-        CREATE INDEX idx_table_permissions_table_name ON table_permissions(table_name);
-
-        COMMENT ON TABLE table_permissions IS '테이블별 역할 권한';
-        COMMENT ON COLUMN table_permissions.can_read IS '읽기 권한';
-        COMMENT ON COLUMN table_permissions.can_write IS '쓰기 권한';
+        )
     """)
+    op.execute("CREATE INDEX idx_table_permissions_role_id ON table_permissions(role_id)")
+    op.execute("CREATE INDEX idx_table_permissions_table_name ON table_permissions(table_name)")
+    op.execute("COMMENT ON TABLE table_permissions IS '테이블별 역할 권한'")
+    op.execute("COMMENT ON COLUMN table_permissions.can_read IS '읽기 권한'")
+    op.execute("COMMENT ON COLUMN table_permissions.can_write IS '쓰기 권한'")
 
     # === drivers 테이블 (Admin Only) ===
     op.execute("""
@@ -121,30 +115,27 @@ def upgrade() -> None:
             emergency_phone VARCHAR(20),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE INDEX idx_drivers_employee_id ON drivers(employee_id);
-        CREATE INDEX idx_drivers_status ON drivers(status);
-
-        COMMENT ON TABLE drivers IS '기사 개인정보 (Admin Only)';
-        COMMENT ON COLUMN drivers.employee_id IS '사원번호';
-        COMMENT ON COLUMN drivers.license_number IS '운전면허 번호';
-        COMMENT ON COLUMN drivers.license_type IS '면허 종류';
-        COMMENT ON COLUMN drivers.status IS '상태 (active, inactive, on_leave)';
+        )
     """)
+    op.execute("CREATE INDEX idx_drivers_employee_id ON drivers(employee_id)")
+    op.execute("CREATE INDEX idx_drivers_status ON drivers(status)")
+    op.execute("COMMENT ON TABLE drivers IS '기사 개인정보 (Admin Only)'")
+    op.execute("COMMENT ON COLUMN drivers.employee_id IS '사원번호'")
+    op.execute("COMMENT ON COLUMN drivers.license_number IS '운전면허 번호'")
+    op.execute("COMMENT ON COLUMN drivers.license_type IS '면허 종류'")
+    op.execute("COMMENT ON COLUMN drivers.status IS '상태 (active, inactive, on_leave)'")
 
     # === 기본 권한 설정 ===
     # Admin: 모든 테이블 접근 가능 (인증 테이블 포함)
     # Manager/Viewer: 물류 운영 테이블만 접근 가능
     op.execute("""
-        -- Admin 권한: 인증 테이블
         INSERT INTO table_permissions (role_id, table_name, can_read, can_write)
         SELECT r.id, t.table_name, TRUE, TRUE
         FROM roles r
         CROSS JOIN (
             VALUES ('users'), ('roles'), ('user_roles'), ('table_permissions'), ('drivers')
         ) AS t(table_name)
-        WHERE r.name = 'admin';
+        WHERE r.name = 'admin'
     """)
 
 
