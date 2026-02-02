@@ -2,10 +2,10 @@
  * 로그인 페이지
  */
 
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { LoginForm } from '../components/Auth/LoginForm';
-import { useAuth } from '../hooks/useAuth';
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { LoginForm } from "../components/Auth/LoginForm";
+import { useAuth } from "../hooks/useAuth";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -13,7 +13,8 @@ export function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
 
   // 이전 페이지 경로 (없으면 홈으로)
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
 
   // 이미 로그인된 경우 리다이렉트
   useEffect(() => {
@@ -27,7 +28,7 @@ export function LoginPage() {
   };
 
   const handleRegisterClick = () => {
-    navigate('/register');
+    navigate("/register");
   };
 
   if (isLoading) {
@@ -50,7 +51,9 @@ export function LoginPage() {
         <h1 className="text-center text-3xl font-bold text-gradient mb-2">
           Text2SQL Agent
         </h1>
-        <h2 className="text-center text-xl text-content-secondary mb-8">로그인</h2>
+        <h2 className="text-center text-xl text-content-secondary mb-8">
+          로그인 페이지
+        </h2>
       </div>
 
       <div className="relative card py-8 px-4 sm:px-10 max-w-md mx-auto w-full">
@@ -58,10 +61,6 @@ export function LoginPage() {
           onSuccess={handleLoginSuccess}
           onRegisterClick={handleRegisterClick}
         />
-      </div>
-
-      <div className="relative mt-4 text-center text-sm text-content-tertiary">
-        <p>테스트 계정: admin@logistics.com / admin123</p>
       </div>
     </div>
   );

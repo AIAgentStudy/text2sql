@@ -2,8 +2,8 @@
  * 로그인 폼 컴포넌트
  */
 
-import { useState, type FormEvent } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useState, type FormEvent } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -12,8 +12,8 @@ interface LoginFormProps {
 
 export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,7 +26,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
       await login({ email, password });
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
+      setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +74,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </div>
 
         {error && (
-          <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
+          <div className="text-red-700 text-sm bg-red-500/40 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
@@ -84,35 +84,37 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
           disabled={isLoading}
           className="btn-primary w-full"
         >
-          {isLoading ? '로그인 중...' : '로그인'}
+          {isLoading ? "로그인 중..." : "로그인"}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-gray-300">
-        계정이 없으신가요?{' '}
+      <div className="mt-6 text-center font-semibold text-sm text-gray-300">
+        계정이 없으신가요?{" "}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+          className="text-blue-400 hover:text-blue-800 font-semibold transition-colors"
         >
           회원가입
         </button>
       </div>
 
       {/* 테스트 계정 안내 */}
-      <div className="mt-6 p-4 bg-surface-secondary/50 rounded-xl border border-surface-border">
-        <p className="text-xs text-gray-400 mb-3 text-center font-medium">테스트 계정</p>
+      <div className="mt-6 p-4 bg-surface-secondary/50 rounded-xl border border-surface-border bg-gray-100">
+        <p className="text-xs text-black mb-3 text-center font-medium">
+          테스트 계정
+        </p>
         <div className="space-y-2 text-xs">
-          <div className="flex justify-between items-center text-gray-300">
-            <span className="text-amber-400 font-medium">Admin</span>
+          <div className="flex justify-between items-center text-black">
+            <span className="text-amber-400 font-semibold">Admin</span>
             <span className="font-mono">admin@test.com / admin123</span>
           </div>
-          <div className="flex justify-between items-center text-gray-300">
-            <span className="text-blue-400 font-medium">Manager</span>
+          <div className="flex justify-between items-center text-black">
+            <span className="text-blue-400 font-semibold">Manager</span>
             <span className="font-mono">manager@test.com / admin123</span>
           </div>
-          <div className="flex justify-between items-center text-gray-300">
-            <span className="text-green-400 font-medium">Viewer</span>
+          <div className="flex justify-between items-center text-black">
+            <span className="text-green-400 font-semibold">Viewer</span>
             <span className="font-mono">viewer@test.com / admin123</span>
           </div>
         </div>
