@@ -101,7 +101,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: "http://backend:8000"
+        VITE_API_BASE_URL: "http://localhost:8000"
     container_name: text2sql-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
