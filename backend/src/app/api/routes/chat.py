@@ -129,7 +129,7 @@ async def chat_endpoint(
                     if node_name == "query_validation" and node_output.get("is_query_valid"):
                         yield _format_sse_event(
                             StatusEvent(
-                                status=QueryRequestStatus.AWAITING_CONFIRMATION,
+                                status=QueryRequestStatus.AWAITING_CONFIRM,
                                 message="쿼리 확인을 기다리고 있습니다...",
                             )
                         )

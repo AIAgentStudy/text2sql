@@ -54,7 +54,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             이름
           </label>
@@ -73,7 +73,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             이메일
           </label>
@@ -92,7 +92,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호
           </label>
@@ -111,7 +111,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="confirmPassword"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호 확인
           </label>
@@ -130,7 +130,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="role"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             역할 선택
           </label>
@@ -140,11 +140,11 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             onChange={(e) => setRole(e.target.value as 'viewer' | 'manager')}
             className="select-dark w-full"
           >
-            <option value="viewer">조회자 (Viewer) - 읽기 전용</option>
-            <option value="manager">매니저 (Manager) - 읽기/쓰기</option>
+            <option value="viewer">조회자 (Viewer)</option>
+            <option value="manager">매니저 (Manager)</option>
           </select>
-          <p className="mt-2 text-xs text-content-tertiary">
-            역할에 따라 시스템 접근 권한이 달라집니다.
+          <p className="mt-2 text-xs text-gray-300">
+            역할에 따라 조회 가능한 테이블이 달라집니다.
           </p>
         </div>
 
@@ -163,12 +163,12 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-content-secondary">
+      <div className="mt-6 text-center text-sm text-white">
         이미 계정이 있으신가요?{' '}
         <button
           type="button"
           onClick={onLoginClick}
-          className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+          className="text-primary-300 hover:text-primary-200 font-semibold underline transition-colors"
         >
           로그인
         </button>

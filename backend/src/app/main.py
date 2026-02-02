@@ -16,6 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from app.config import get_settings, setup_logging
 from app.database.connection import close_pool, create_pool
+from app.database.schema import get_database_schema
 from app.errors.handlers import register_error_handlers
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"데이터베이스 연결 실패: {e}")
         # 연결 실패해도 서버는 시작 (헬스체크에서 확인 가능)
+
+    # 스키마 미리 로드 (Eager Loading) - 첫 요청 지연 제거
+    try:
+        schema = await get_database_schema()
+        logger.info(f"스키마 캐시 미리 로드 완료: {len(schema.tables)}개 테이블")
+    except Exception as e:
+        logger.warning(f"스키마 미리 로드 실패 (첫 요청 시 재시도됨): {e}")
 
     yield
 

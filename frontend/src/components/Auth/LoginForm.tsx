@@ -38,7 +38,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             이메일
           </label>
@@ -57,7 +57,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-content-secondary mb-2"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호
           </label>
@@ -88,12 +88,12 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-content-secondary">
+      <div className="mt-6 text-center text-sm text-gray-300">
         계정이 없으신가요?{' '}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+          className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
         >
           회원가입
         </button>

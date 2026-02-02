@@ -78,7 +78,7 @@ export function MessageInput({
           placeholder={placeholder}
           disabled={isDisabled}
           rows={1}
-          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-content-primary placeholder-content-tertiary focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="메시지 입력"
         />
         <button
@@ -120,7 +120,7 @@ export function MessageInput({
           )}
         </button>
       </div>
-      <p className="mt-2 text-xs text-content-tertiary">
+      <p className="mt-2 text-xs text-gray-400">
         Enter로 전송, Shift+Enter로 줄바꿈
       </p>
     </form>
