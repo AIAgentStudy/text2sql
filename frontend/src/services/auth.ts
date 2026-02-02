@@ -20,10 +20,13 @@ export interface TokenResponse {
   expires_in: number;
 }
 
+export type UserRole = 'viewer' | 'manager';
+
 export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
+  role?: UserRole;
 }
 
 export interface LoginRequest {

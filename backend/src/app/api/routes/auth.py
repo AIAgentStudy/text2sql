@@ -66,25 +66,26 @@ async def register(request: RegisterRequest) -> UserResponse:
 
         user_id = user_row["id"]
 
-        # 기본 역할(viewer) 할당
-        viewer_role = await conn.fetchrow(
-            "SELECT id FROM roles WHERE name = 'viewer'"
+        # 요청된 역할 할당
+        selected_role = await conn.fetchrow(
+            "SELECT id FROM roles WHERE name = $1",
+            request.role,
         )
-        if viewer_role:
+        if selected_role:
             await conn.execute(
                 "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)",
                 user_id,
-                viewer_role["id"],
+                selected_role["id"],
             )
 
-        logger.info(f"새 사용자 등록: {request.email}")
+        logger.info(f"새 사용자 등록: {request.email}, 역할: {request.role}")
 
         return UserResponse(
             id=user_row["id"],
             email=user_row["email"],
             name=user_row["name"],
             is_active=user_row["is_active"],
-            roles=["viewer"],
+            roles=[request.role],
             created_at=user_row["created_at"],
         )
 

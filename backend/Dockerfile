@@ -1,6 +1,3 @@
-# Text2SQL Agent Backend Dockerfile
-# Python 3.11 기반
-
 FROM python:3.11-slim AS base
 
 # 환경 변수 설정

@@ -16,6 +16,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'viewer' | 'manager'>('viewer');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,7 +39,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
     setIsLoading(true);
 
     try {
-      await register({ email, password, name });
+      await register({ email, password, name, role });
       onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : '회원가입에 실패했습니다.');
@@ -124,6 +125,27 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             placeholder="비밀번호 재입력"
           />
+        </div>
+
+        <div>
+          <label
+            htmlFor="role"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            역할 선택
+          </label>
+          <select
+            id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as 'viewer' | 'manager')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+          >
+            <option value="viewer">조회자 (Viewer) - 읽기 전용</option>
+            <option value="manager">매니저 (Manager) - 읽기/쓰기</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            역할에 따라 시스템 접근 권한이 달라집니다.
+          </p>
         </div>
 
         {error && (

@@ -15,6 +15,10 @@ class RegisterRequest(BaseModel):
     email: EmailStr = Field(..., description="이메일 주소")
     password: str = Field(..., min_length=8, description="비밀번호 (최소 8자)")
     name: str = Field(..., min_length=2, max_length=100, description="이름")
+    role: Literal["viewer", "manager"] = Field(
+        default="viewer",
+        description="역할 (viewer: 조회자, manager: 매니저)"
+    )
 
 
 class LoginRequest(BaseModel):
