@@ -32,29 +32,35 @@ export function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold text-gray-900 mb-2">
-          Text2SQL Agent
-        </h1>
-        <h2 className="text-center text-xl text-gray-600 mb-8">로그인</h2>
+    <div className="min-h-screen bg-gradient-dark flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* 배경 장식 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-600/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-700/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10 max-w-md mx-auto w-full">
+      <div className="relative sm:mx-auto sm:w-full sm:max-w-md">
+        <h1 className="text-center text-3xl font-bold text-gradient mb-2">
+          Text2SQL Agent
+        </h1>
+        <h2 className="text-center text-xl text-content-secondary mb-8">로그인</h2>
+      </div>
+
+      <div className="relative card py-8 px-4 sm:px-10 max-w-md mx-auto w-full">
         <LoginForm
           onSuccess={handleLoginSuccess}
           onRegisterClick={handleRegisterClick}
         />
       </div>
 
-      <div className="mt-4 text-center text-sm text-gray-500">
+      <div className="relative mt-4 text-center text-sm text-content-tertiary">
         <p>테스트 계정: admin@logistics.com / admin123</p>
       </div>
     </div>

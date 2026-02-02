@@ -54,21 +54,21 @@ export function QueryPreview({
   };
 
   return (
-    <div className="query-preview rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="query-preview card p-4">
       {/* 쿼리 설명 */}
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900">쿼리 미리보기</h3>
-        <p className="mt-1 text-sm text-gray-600">{explanation}</p>
+        <h3 className="text-lg font-medium text-content-primary">쿼리 미리보기</h3>
+        <p className="mt-1 text-sm text-content-secondary">{explanation}</p>
       </div>
 
       {/* SQL 쿼리 */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">SQL 쿼리</span>
+          <span className="text-sm font-medium text-content-secondary">SQL 쿼리</span>
           {allowEdit && (
             <button
               onClick={handleEditToggle}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
               disabled={isLoading}
             >
               {isEditing ? '편집 취소' : '쿼리 수정'}
@@ -80,18 +80,20 @@ export function QueryPreview({
           <textarea
             value={modifiedQuery}
             onChange={(e) => setModifiedQuery(e.target.value)}
-            className="mt-2 w-full rounded-md border border-gray-300 bg-gray-50 p-3 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-2 w-full input-dark font-mono text-sm"
             rows={6}
             disabled={isLoading}
           />
         ) : (
-          <pre className="mt-2 overflow-x-auto rounded-md bg-gray-900 p-3 text-sm text-green-400">
-            <code>{query}</code>
-          </pre>
+          <div className="code-block mt-2">
+            <pre className="overflow-x-auto text-sm">
+              <code className="text-emerald-400">{query}</code>
+            </pre>
+          </div>
         )}
 
         {isEditing && modifiedQuery !== query && (
-          <p className="mt-1 text-xs text-amber-600">
+          <p className="mt-1 text-xs text-amber-400">
             * 쿼리가 수정되었습니다. 수정된 쿼리는 다시 검증됩니다.
           </p>
         )}
@@ -102,14 +104,14 @@ export function QueryPreview({
         <button
           onClick={handleReject}
           disabled={isLoading}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-secondary"
         >
           취소
         </button>
         <button
           onClick={handleApprove}
           disabled={isLoading}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary"
         >
           {isLoading ? (
             <span className="flex items-center">

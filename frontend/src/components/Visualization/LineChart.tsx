@@ -15,8 +15,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// 차트 색상 팔레트
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+// 다크 테마용 차트 색상 팔레트 (보라/파랑 계열)
+const COLORS = ['#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b'];
 
 interface LineChartProps {
   data: Record<string, string | number>[];
@@ -31,32 +31,36 @@ export function LineChartComponent({ data, xAxisKey, yAxisKeys }: LineChartProps
         data={data}
         margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
         <XAxis
           dataKey={xAxisKey}
-          tick={{ fontSize: 12, fill: '#6B7280' }}
+          tick={{ fontSize: 12, fill: '#94a3b8' }}
           angle={-45}
           textAnchor="end"
           height={60}
           interval={0}
+          stroke="rgba(255, 255, 255, 0.1)"
         />
         <YAxis
-          tick={{ fontSize: 12, fill: '#6B7280' }}
+          tick={{ fontSize: 12, fill: '#94a3b8' }}
           tickFormatter={(value) =>
             typeof value === 'number' ? value.toLocaleString() : value
           }
+          stroke="rgba(255, 255, 255, 0.1)"
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            backgroundColor: 'rgba(26, 26, 46, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            color: '#f8fafc',
           }}
+          labelStyle={{ color: '#94a3b8' }}
           formatter={(value: number) => [value.toLocaleString(), '']}
         />
         <Legend
-          wrapperStyle={{ paddingTop: '10px' }}
+          wrapperStyle={{ paddingTop: '10px', color: '#94a3b8' }}
         />
         {yAxisKeys.map((key, index) => (
           <Line
@@ -66,7 +70,7 @@ export function LineChartComponent({ data, xAxisKey, yAxisKeys }: LineChartProps
             stroke={COLORS[index % COLORS.length]}
             strokeWidth={2}
             dot={{ fill: COLORS[index % COLORS.length], strokeWidth: 2 }}
-            activeDot={{ r: 6 }}
+            activeDot={{ r: 6, fill: COLORS[index % COLORS.length], stroke: '#fff', strokeWidth: 2 }}
           />
         ))}
       </LineChart>

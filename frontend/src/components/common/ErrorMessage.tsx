@@ -27,22 +27,22 @@ interface ErrorMessageProps {
 
 const severityStyles: Record<ErrorSeverity, { bg: string; border: string; icon: string; text: string }> = {
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500/20',
     icon: 'text-red-400',
-    text: 'text-red-800',
+    text: 'text-red-300',
   },
   warning: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    icon: 'text-yellow-400',
-    text: 'text-yellow-800',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20',
+    icon: 'text-amber-400',
+    text: 'text-amber-300',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
     icon: 'text-blue-400',
-    text: 'text-blue-800',
+    text: 'text-blue-300',
   },
 };
 
@@ -90,7 +90,7 @@ export function ErrorMessage({
 
   return (
     <div
-      className={`rounded-lg border p-4 ${styles.bg} ${styles.border}`}
+      className={`rounded-xl border p-4 ${styles.bg} ${styles.border}`}
       role="alert"
     >
       <div className="flex">
@@ -109,7 +109,7 @@ export function ErrorMessage({
           {/* 제안/도움말 */}
           {suggestion && (
             <p className={`mt-2 text-sm ${styles.text} opacity-80`}>
-              💡 {suggestion}
+              {suggestion}
             </p>
           )}
 
@@ -144,11 +144,11 @@ export function ErrorMessage({
           <div className="ml-auto pl-3">
             <button
               onClick={onDismiss}
-              className={`inline-flex rounded-md p-1.5 ${styles.text} opacity-40 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              className={`inline-flex rounded-md p-1.5 ${styles.text} opacity-40 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-800 ${
                 severity === 'error'
                   ? 'focus:ring-red-500'
                   : severity === 'warning'
-                  ? 'focus:ring-yellow-500'
+                  ? 'focus:ring-amber-500'
                   : 'focus:ring-blue-500'
               }`}
             >

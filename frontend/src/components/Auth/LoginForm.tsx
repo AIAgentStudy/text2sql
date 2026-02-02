@@ -34,11 +34,11 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-content-secondary mb-2"
           >
             이메일
           </label>
@@ -49,7 +49,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="email@example.com"
           />
         </div>
@@ -57,7 +57,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-content-secondary mb-2"
           >
             비밀번호
           </label>
@@ -68,13 +68,13 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="********"
           />
         </div>
 
         {error && (
-          <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+          <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
@@ -82,18 +82,18 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="btn-primary w-full"
         >
           {isLoading ? '로그인 중...' : '로그인'}
         </button>
       </form>
 
-      <div className="mt-4 text-center text-sm text-gray-600">
+      <div className="mt-6 text-center text-sm text-content-secondary">
         계정이 없으신가요?{' '}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-blue-600 hover:text-blue-800 font-medium"
+          className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
         >
           회원가입
         </button>

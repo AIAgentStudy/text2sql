@@ -22,9 +22,9 @@ const sizeClasses = {
 };
 
 const colorClasses = {
-  primary: 'text-blue-600',
+  primary: 'text-primary-500',
   white: 'text-white',
-  gray: 'text-gray-400',
+  gray: 'text-content-tertiary',
 };
 
 export function LoadingSpinner({
@@ -64,7 +64,7 @@ export function LoadingSpinner({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark-900/80 backdrop-blur-sm">
         {spinner}
       </div>
     );
@@ -78,7 +78,7 @@ export function LoadingSpinner({
  */
 export function InlineSpinner({ text = '처리 중...' }: { text?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 text-sm text-gray-500">
+    <span className="inline-flex items-center gap-2 text-sm text-content-secondary">
       <LoadingSpinner size="sm" color="gray" />
       {text}
     </span>
@@ -101,7 +101,7 @@ export function StatusSpinner({
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-4 text-blue-700">
+    <div className="flex items-center gap-3 rounded-xl bg-primary-600/10 border border-primary-500/20 p-4 text-primary-300">
       <LoadingSpinner size="sm" color="primary" />
       <span className="text-sm">{messages[status]}</span>
     </div>
