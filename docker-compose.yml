@@ -60,10 +60,7 @@ services:
       # LLM 설정
       DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-openai}
 
-      # JWT 인증 설정
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-key-change-in-production}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
-      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      # JWT 인증 설정 (.env 파일에서 로드됨)
 
       # 로깅 설정
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -75,7 +72,7 @@ services:
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-text2sql}
 
       # CORS 설정
-      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:5173", "http://localhost"]'
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -101,7 +98,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: "http://backend:8000"
+        VITE_API_BASE_URL: "http://localhost:8000"
     container_name: text2sql-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

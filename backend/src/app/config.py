@@ -77,10 +77,15 @@ class Settings(BaseSettings):
     )
 
     # === CORS 설정 ===
-    cors_origins: list[str] = Field(
-        default=["http://localhost:5173", "http://localhost:3000"],
-        description="허용된 CORS 오리진",
+    cors_origins: str = Field(
+        default="http://localhost:5173,http://localhost:3000",
+        description="허용된 CORS 오리진 (쉼표로 구분)",
     )
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """CORS 오리진 목록 반환"""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     # === JWT 인증 설정 ===
     jwt_secret_key: str = Field(
