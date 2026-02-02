@@ -30,16 +30,18 @@ target_metadata = None
 
 def get_database_url() -> str:
     """환경 변수에서 데이터베이스 URL 가져오기"""
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        raise ValueError("DATABASE_URL 환경 변수가 설정되지 않았습니다.")
+    db_host = os.environ.get("DB_HOST", "localhost")
+    db_port = os.environ.get("DB_PORT", "5432")
+    db_user = os.environ.get("DB_USER")
+    db_password = os.environ.get("DB_PASSWORD")
+    db_name = os.environ.get("DB_NAME")
 
-    # asyncpg URL을 psycopg2 URL로 변환 (alembic은 동기 드라이버 필요)
-    if url.startswith("postgresql://"):
-        return url
-    elif url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
-    return url
+    if not all([db_user, db_password, db_name]):
+        raise ValueError(
+            "DB_USER, DB_PASSWORD, DB_NAME 환경 변수가 모두 설정되어야 합니다."
+        )
+
+    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 
 def run_migrations_offline() -> None:
