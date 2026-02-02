@@ -90,6 +90,27 @@ def get_fast_model(
     return provider.get_fast_model(config)
 
 
+def get_llm(
+    provider_type: ProviderType | None = None,
+    config: LLMConfig | None = None,
+    use_fast_model: bool = False,
+) -> BaseChatModel:
+    """
+    LLM 인스턴스 반환 (get_chat_model/get_fast_model 래퍼)
+
+    Args:
+        provider_type: 프로바이더 타입 (None이면 기본 설정 사용)
+        config: LLM 설정 (None이면 기본 설정 사용)
+        use_fast_model: True면 빠른 모델 사용
+
+    Returns:
+        BaseChatModel 인스턴스
+    """
+    if use_fast_model:
+        return get_fast_model(provider_type, config)
+    return get_chat_model(provider_type, config)
+
+
 async def check_llm_availability(
     provider_type: ProviderType | None = None,
 ) -> bool:
