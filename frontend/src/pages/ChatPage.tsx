@@ -62,7 +62,7 @@ export function ChatPage() {
           </p>
           {user?.roles.includes('viewer') && !user?.roles.includes('admin') && !user?.roles.includes('manager') && (
             <p className="text-amber-400 mt-1">
-              Viewer 권한: 물류 운영 테이블만 조회 가능합니다.
+              Viewer 권한: 창고, 제품, 재고 테이블만 조회 가능합니다.
             </p>
           )}
         </div>

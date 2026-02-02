@@ -377,20 +377,37 @@ def upgrade() -> None:
     op.execute("COMMENT ON COLUMN route_stops.status IS '정류 상태 (pending, arrived, completed, skipped)'")
 
     # === 물류 테이블 권한 설정 ===
-    # Admin, Manager, Viewer 모두 물류 테이블 접근 가능
-    logistics_tables = [
-        'warehouses', 'warehouse_zones', 'product_categories', 'products',
-        'inventory', 'inventory_transactions', 'customers', 'orders',
-        'order_items', 'carriers', 'vehicles', 'shipments', 'shipment_items',
+    # Viewer: 창고/제품/재고 테이블만 (5개)
+    # Manager/Admin: 전체 물류 테이블 (15개)
+
+    # Viewer가 접근 가능한 테이블 (기본 조회용)
+    viewer_tables = [
+        'warehouses', 'warehouse_zones', 'product_categories', 'products', 'inventory'
+    ]
+
+    # Manager/Admin만 접근 가능한 테이블 (고객, 주문, 배송 관련)
+    manager_only_tables = [
+        'inventory_transactions', 'customers', 'orders', 'order_items',
+        'carriers', 'vehicles', 'shipments', 'shipment_items',
         'delivery_routes', 'route_stops'
     ]
 
-    for table in logistics_tables:
+    # Viewer 테이블 권한 (Admin, Manager, Viewer 모두 접근 가능)
+    for table in viewer_tables:
         op.execute(f"""
             INSERT INTO table_permissions (role_id, table_name, can_read, can_write)
             SELECT r.id, '{table}', TRUE, CASE WHEN r.name = 'viewer' THEN FALSE ELSE TRUE END
             FROM roles r
             WHERE r.name IN ('admin', 'manager', 'viewer');
+        """)
+
+    # Manager 전용 테이블 권한 (Admin, Manager만 접근 가능)
+    for table in manager_only_tables:
+        op.execute(f"""
+            INSERT INTO table_permissions (role_id, table_name, can_read, can_write)
+            SELECT r.id, '{table}', TRUE, TRUE
+            FROM roles r
+            WHERE r.name IN ('admin', 'manager');
         """)
 
 

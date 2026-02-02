@@ -20,36 +20,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # === 기본 Admin 사용자 생성 ===
+    # === 테스트 계정 생성 ===
     # password: admin123 (bcrypt hash)
     op.execute("""
         INSERT INTO users (email, password_hash, name, is_active) VALUES
-        ('admin@logistics.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'System Admin', TRUE),
-        ('manager1@logistics.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Kim Manager', TRUE),
-        ('manager2@logistics.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Lee Manager', TRUE),
-        ('viewer1@logistics.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Park Viewer', TRUE),
-        ('viewer2@logistics.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Choi Viewer', TRUE)
+        ('admin@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Admin', TRUE),
+        ('manager@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Manager', TRUE),
+        ('viewer@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Viewer', TRUE)
     """)
-    # 사용자 역할 할당
+    # 테스트 계정 역할 할당
     op.execute("""
         INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'admin@logistics.com' AND r.name = 'admin'
+        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'admin@test.com' AND r.name = 'admin'
     """)
     op.execute("""
         INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'manager1@logistics.com' AND r.name = 'manager'
+        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'manager@test.com' AND r.name = 'manager'
     """)
     op.execute("""
         INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'manager2@logistics.com' AND r.name = 'manager'
-    """)
-    op.execute("""
-        INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'viewer1@logistics.com' AND r.name = 'viewer'
-    """)
-    op.execute("""
-        INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'viewer2@logistics.com' AND r.name = 'viewer'
+        SELECT u.id, r.id FROM users u, roles r WHERE u.email = 'viewer@test.com' AND r.name = 'viewer'
     """)
 
     # === Drivers (기사 정보) ===

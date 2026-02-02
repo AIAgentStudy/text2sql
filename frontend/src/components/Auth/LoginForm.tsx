@@ -98,6 +98,28 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
           회원가입
         </button>
       </div>
+
+      {/* 테스트 계정 안내 */}
+      <div className="mt-6 p-4 bg-surface-secondary/50 rounded-xl border border-surface-border">
+        <p className="text-xs text-gray-400 mb-3 text-center font-medium">테스트 계정</p>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between items-center text-gray-300">
+            <span className="text-amber-400 font-medium">Admin</span>
+            <span className="font-mono">admin@test.com / admin123</span>
+          </div>
+          <div className="flex justify-between items-center text-gray-300">
+            <span className="text-blue-400 font-medium">Manager</span>
+            <span className="font-mono">manager@test.com / admin123</span>
+          </div>
+          <div className="flex justify-between items-center text-gray-300">
+            <span className="text-green-400 font-medium">Viewer</span>
+            <span className="font-mono">viewer@test.com / admin123</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          역할별로 조회 가능한 테이블이 다릅니다
+        </p>
+      </div>
     </div>
   );
 }
