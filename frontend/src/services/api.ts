@@ -2,6 +2,7 @@
  * API 서비스
  *
  * SSE 스트리밍 지원이 포함된 백엔드 API 클라이언트입니다.
+ * 인증 토큰 인터셉터가 포함되어 있습니다.
  */
 
 import type {
@@ -14,9 +15,10 @@ import type {
   SessionResponse,
   DatabaseSchema,
 } from '../types';
+import { getAuthHeader, refreshToken, clearTokens } from './auth';
 
 // API 기본 URL (환경변수 또는 기본값)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 /**
  * API 에러 클래스
@@ -33,11 +35,12 @@ export class ApiError extends Error {
 }
 
 /**
- * 기본 fetch 래퍼
+ * 기본 fetch 래퍼 (인증 토큰 자동 포함)
  */
 async function fetchApi<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retry = true
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -45,15 +48,28 @@ async function fetchApi<T>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
       ...options.headers,
     },
   });
 
+  // 401 에러 시 토큰 갱신 후 재시도
+  if (response.status === 401 && retry) {
+    const newTokens = await refreshToken();
+    if (newTokens) {
+      return fetchApi<T>(endpoint, options, false);
+    }
+    // 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
+    clearTokens();
+    window.location.href = '/login';
+    throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.', 401);
+  }
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
-      errorData.error?.code || 'UNKNOWN_ERROR',
-      errorData.error?.message || `HTTP ${response.status} 에러가 발생했습니다.`,
+      errorData.error?.code || errorData.detail || 'UNKNOWN_ERROR',
+      errorData.error?.message || errorData.detail || `HTTP ${response.status} 에러가 발생했습니다.`,
       response.status
     );
   }
@@ -99,7 +115,7 @@ export interface SSEEventHandlers {
 }
 
 /**
- * SSE 스트림 연결
+ * SSE 스트림 연결 (인증 토큰 포함)
  */
 export async function streamChat(
   request: ChatRequest,
@@ -114,16 +130,24 @@ export async function streamChat(
       headers: {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
+        ...getAuthHeader(),
       },
       body: JSON.stringify(request),
       signal,
     });
 
     if (!response.ok) {
+      // 401 에러 시 로그인 페이지로 리다이렉트
+      if (response.status === 401) {
+        clearTokens();
+        window.location.href = '/login';
+        throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.', 401);
+      }
+
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
-        errorData.error?.code || 'STREAM_ERROR',
-        errorData.error?.message || `스트림 연결 실패: HTTP ${response.status}`,
+        errorData.error?.code || errorData.detail || 'STREAM_ERROR',
+        errorData.error?.message || errorData.detail || `스트림 연결 실패: HTTP ${response.status}`,
         response.status
       );
     }

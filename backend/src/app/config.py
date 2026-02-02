@@ -81,6 +81,21 @@ class Settings(BaseSettings):
         description="허용된 CORS 오리진",
     )
 
+    # === JWT 인증 설정 ===
+    jwt_secret_key: str = Field(
+        default="your-super-secret-key-change-in-production",
+        description="JWT 서명 키 (프로덕션에서는 반드시 변경)",
+    )
+    jwt_algorithm: str = Field(default="HS256", description="JWT 알고리즘")
+    access_token_expire_minutes: int = Field(
+        default=30,
+        description="Access Token 만료 시간 (분)",
+    )
+    refresh_token_expire_days: int = Field(
+        default=7,
+        description="Refresh Token 만료 시간 (일)",
+    )
+
     @property
     def database_url_str(self) -> str:
         """데이터베이스 URL을 문자열로 반환"""

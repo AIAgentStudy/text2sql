@@ -6,14 +6,17 @@
 
 import json
 import logging
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from langgraph.types import Command
 from sse_starlette.sse import EventSourceResponse
 
 from app.agent.graph import get_graph
 from app.agent.state import create_initial_state
+from app.auth.dependencies import get_current_user
+from app.auth.permissions import get_accessible_tables
+from app.models.auth import UserWithRoles
 from app.models.entities import QueryRequestStatus
 from app.models.requests import ChatRequest, ConfirmationRequest
 from app.models.responses import (
@@ -46,12 +49,18 @@ router = APIRouter()
     summary="새로운 질문 전송",
     description="자연어 질문을 전송하고 SQL 쿼리 생성을 시작합니다. SSE를 통해 진행 상황을 스트리밍합니다.",
 )
-async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
+async def chat_endpoint(
+    request: ChatRequest,
+    current_user: Annotated[UserWithRoles, Depends(get_current_user)],
+) -> EventSourceResponse:
     """
     채팅 엔드포인트 - SSE 스트리밍
 
     자연어 질문을 받아 SQL 쿼리를 생성하고 실행 결과를 스트리밍합니다.
+    인증된 사용자만 접근 가능하며, 사용자 역할에 따라 접근 가능한 테이블이 제한됩니다.
     """
+    # 사용자가 접근 가능한 테이블 목록 조회
+    accessible_tables = await get_accessible_tables(current_user, "read")
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         try:
@@ -82,10 +91,13 @@ async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
             graph = get_graph(get_checkpointer())
             config = {"configurable": {"thread_id": session_id}}
 
-            # 초기 상태 생성
+            # 초기 상태 생성 (사용자 권한 정보 포함)
             initial_state = create_initial_state(
                 user_question=request.message,
                 session_id=session_id,
+                accessible_tables=accessible_tables,
+                user_id=current_user.id,
+                user_roles=current_user.roles,
             )
 
             # 그래프 실행 및 스트리밍
@@ -211,12 +223,16 @@ async def chat_endpoint(request: ChatRequest) -> EventSourceResponse:
     summary="쿼리 실행 확인",
     description="생성된 쿼리의 실행을 승인하거나 취소합니다.",
 )
-async def confirm_query(request: ConfirmationRequest) -> ConfirmationResponse:
+async def confirm_query(
+    request: ConfirmationRequest,
+    current_user: Annotated[UserWithRoles, Depends(get_current_user)],
+) -> ConfirmationResponse:
     """
     쿼리 실행 확인 엔드포인트
 
     Human-in-the-Loop: 사용자가 쿼리 실행을 승인하면 실행합니다.
     LangGraph Command(resume)를 사용하여 일시 중지된 워크플로우를 재개합니다.
+    인증된 사용자만 접근 가능합니다.
     """
     try:
         session_id = request.session_id
