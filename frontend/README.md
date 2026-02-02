@@ -13,7 +13,7 @@ React와 TypeScript로 구축된 SPA(Single Page Application)로, SSE(Server-Sen
 - **TanStack Query (React Query)** - 서버 상태 관리
 - **Tailwind CSS** - 유틸리티 기반 스타일링
 - **Vite** - 빌드 도구
-- **Nginx** - 프로덕션 서빙
+- **serve** - 프로덕션 정적 파일 서빙
 
 ## 프로젝트 구조
 
@@ -46,8 +46,7 @@ frontend/
 ├── vite.config.ts          # Vite 설정
 ├── tsconfig.json           # TypeScript 설정
 ├── package.json
-├── Dockerfile
-└── nginx.conf              # Nginx 설정
+└── Dockerfile
 ```
 
 ## 설치 및 실행
@@ -302,16 +301,13 @@ export default defineConfig({
 });
 ```
 
-## Nginx 설정
+## 프로덕션 서빙
 
-프로덕션 환경에서 Nginx가 정적 파일을 서빙하고 API 요청을 백엔드로 프록시합니다.
+프로덕션 환경에서 `serve` 패키지를 사용하여 정적 파일을 서빙합니다.
 
-- SPA 라우팅 지원 (`try_files`)
-- API 프록시 (`/api/` → `backend:8000`)
-- SSE 지원 (`proxy_buffering off`)
-- 정적 파일 캐싱
-- Gzip 압축
-- 보안 헤더
+- SPA 라우팅 지원 (`-s` 플래그)
+- 포트 3000에서 서빙
+- API 요청은 `VITE_API_BASE_URL` 환경 변수로 설정된 백엔드로 직접 전송
 
 ## 스타일링
 

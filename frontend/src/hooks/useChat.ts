@@ -341,7 +341,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             currentStatus: 'failed',
             awaitingConfirmation: false,
             pendingQueryId: null,
-            error: response.error,
+            error: response.error ?? null,
           }));
         } else {
           // 취소된 경우

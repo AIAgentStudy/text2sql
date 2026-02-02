@@ -202,3 +202,10 @@ temp/
 # Test artifacts
 test-results/
 playwright-report/
+
+.sepcify/
+memory/
+scripts/
+templates/
+specs/
+.claude

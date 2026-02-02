@@ -44,6 +44,11 @@ services:
 
       # 데이터베이스 설정
       DATABASE_URL: postgresql://${POSTGRES_USER:-text2sql}:${POSTGRES_PASSWORD:-text2sql_dev}@postgres:5432/${POSTGRES_DB:-text2sql_db}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-text2sql}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-text2sql_dev}
+      DB_NAME: ${POSTGRES_DB:-text2sql_db}
 
       # LLM API 키 (호스트 환경에서 전달)
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -88,14 +93,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ""  # 프록시 사용으로 빈 값
+        VITE_API_BASE_URL: "http://backend:8000"
     container_name: text2sql-frontend
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
