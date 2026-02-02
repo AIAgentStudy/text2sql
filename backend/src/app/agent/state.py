@@ -31,6 +31,15 @@ class Text2SQLAgentState(TypedDict):
     relevant_tables: list[str]
     """관련 테이블 목록"""
 
+    accessible_tables: list[str]
+    """사용자 권한에 따라 접근 가능한 테이블 목록"""
+
+    user_id: int | None
+    """현재 사용자 ID"""
+
+    user_roles: list[str]
+    """현재 사용자 역할 목록"""
+
     # === 쿼리 생성 ===
     generated_query: str
     """생성된 SQL 쿼리"""
@@ -82,6 +91,9 @@ class Text2SQLAgentState(TypedDict):
 def create_initial_state(
     user_question: str,
     session_id: str,
+    accessible_tables: list[str] | None = None,
+    user_id: int | None = None,
+    user_roles: list[str] | None = None,
 ) -> Text2SQLAgentState:
     """초기 에이전트 상태 생성"""
     return Text2SQLAgentState(
@@ -93,6 +105,9 @@ def create_initial_state(
         # 스키마 컨텍스트
         database_schema="",
         relevant_tables=[],
+        accessible_tables=accessible_tables or [],
+        user_id=user_id,
+        user_roles=user_roles or [],
         # 쿼리 생성
         generated_query="",
         query_explanation="",

@@ -5,12 +5,18 @@
  * useSession과 useChat 훅을 사용하여 상태를 관리합니다.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useSession } from '../../hooks/useSession';
 import { useChat } from '../../hooks/useChat';
 import type { LLMProvider } from '../../types';
+
+const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'google', label: 'Google' },
+];
 
 interface ChatContainerProps {
   /** LLM 제공자 */
@@ -18,13 +24,15 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
+  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(llmProvider);
+
   const {
     sessionId,
     setSessionId,
     terminateSession,
   } = useSession({
     autoRestore: true,
-    defaultLLMProvider: llmProvider,
+    defaultLLMProvider: selectedProvider,
   });
 
   const {
@@ -38,7 +46,7 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
     clearChat,
   } = useChat({
     sessionId,
-    llmProvider,
+    llmProvider: selectedProvider,
     onSessionId: setSessionId,
   });
 
@@ -77,12 +85,26 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
             {sessionId ? '세션 연결됨' : '세션 대기 중'}
           </span>
         </div>
-        <button
-          onClick={handleNewChat}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          새 대화
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value as LLMProvider)}
+            disabled={isLoading}
+            className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
+          >
+            {LLM_PROVIDERS.map((provider) => (
+              <option key={provider.value} value={provider.value}>
+                {provider.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleNewChat}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            새 대화
+          </button>
+        </div>
       </div>
 
       {/* 메시지 목록 */}

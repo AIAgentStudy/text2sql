@@ -9,7 +9,7 @@ import sys
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,10 +29,11 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, description="디버그 모드")
 
     # === 데이터베이스 설정 ===
-    database_url: PostgresDsn = Field(
-        ...,
-        description="PostgreSQL 연결 문자열",
-    )
+    db_host: str = Field(default="localhost", description="데이터베이스 호스트")
+    db_port: int = Field(default=5432, description="데이터베이스 포트")
+    db_user: str = Field(..., description="데이터베이스 사용자")
+    db_password: str = Field(..., description="데이터베이스 비밀번호")
+    db_name: str = Field(..., description="데이터베이스 이름")
     db_pool_min_size: int = Field(default=5, description="DB 연결 풀 최소 크기")
     db_pool_max_size: int = Field(default=20, description="DB 연결 풀 최대 크기")
 
@@ -81,10 +82,25 @@ class Settings(BaseSettings):
         description="허용된 CORS 오리진",
     )
 
+    # === JWT 인증 설정 ===
+    jwt_secret_key: str = Field(
+        default="your-super-secret-key-change-in-production",
+        description="JWT 서명 키 (프로덕션에서는 반드시 변경)",
+    )
+    jwt_algorithm: str = Field(default="HS256", description="JWT 알고리즘")
+    access_token_expire_minutes: int = Field(
+        default=30,
+        description="Access Token 만료 시간 (분)",
+    )
+    refresh_token_expire_days: int = Field(
+        default=7,
+        description="Refresh Token 만료 시간 (일)",
+    )
+
     @property
     def database_url_str(self) -> str:
         """데이터베이스 URL을 문자열로 반환"""
-        return str(self.database_url)
+        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
 
 @lru_cache
