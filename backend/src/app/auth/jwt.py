@@ -30,6 +30,10 @@ def create_access_token(
     settings = get_settings()
     to_encode = data.copy()
 
+    # sub를 문자열로 변환 (JWT 표준)
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
+
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -66,6 +70,10 @@ def create_refresh_token(
     """
     settings = get_settings()
     to_encode = data.copy()
+
+    # sub를 문자열로 변환 (JWT 표준)
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
 
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -110,6 +118,10 @@ def verify_token(token: str, token_type: str = "access") -> dict[str, Any] | Non
         # 토큰 타입 확인
         if payload.get("type") != token_type:
             return None
+
+        # sub를 정수로 변환
+        if "sub" in payload:
+            payload["sub"] = int(payload["sub"])
 
         return payload
 

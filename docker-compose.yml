@@ -60,10 +60,7 @@ services:
       # LLM 설정
       DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-openai}
 
-      # JWT 인증 설정
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
-      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      # JWT 인증 설정 (.env 파일에서 로드됨)
 
       # 로깅 설정
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
