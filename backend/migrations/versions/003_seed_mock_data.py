@@ -21,12 +21,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # === 테스트 계정 생성 ===
-    # password: admin123 (bcrypt hash)
+    # password: admin123 (bcrypt hash - generated with passlib)
     op.execute("""
         INSERT INTO users (email, password_hash, name, is_active) VALUES
-        ('admin@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Admin', TRUE),
-        ('manager@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Manager', TRUE),
-        ('viewer@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X.NRkJcD0FGMIjH7y', 'Test Viewer', TRUE)
+        ('admin@test.com', '$2b$12$H798K22vn2gtOFqdkhIC0OcRim9uwJyBTUM50op4FlzJFejDCvyPK', 'Test Admin', TRUE),
+        ('manager@test.com', '$2b$12$H798K22vn2gtOFqdkhIC0OcRim9uwJyBTUM50op4FlzJFejDCvyPK', 'Test Manager', TRUE),
+        ('viewer@test.com', '$2b$12$H798K22vn2gtOFqdkhIC0OcRim9uwJyBTUM50op4FlzJFejDCvyPK', 'Test Viewer', TRUE)
     """)
     # 테스트 계정 역할 할당
     op.execute("""

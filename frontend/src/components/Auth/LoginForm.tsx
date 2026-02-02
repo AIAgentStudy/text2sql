@@ -74,7 +74,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </div>
 
         {error && (
-          <div className="text-red-700 text-sm bg-red-500/40 border border-red-500/20 p-3 rounded-xl">
+          <div className="text-red-700 text-sm bg-red-300/70 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
