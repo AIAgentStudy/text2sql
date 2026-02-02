@@ -26,6 +26,7 @@ python-jose[cryptography]>=3.3.0
 # === 데이터 검증 ===
 pydantic>=2.10.4
 pydantic-settings>=2.7.1
+email-validator>=2.0.0
 
 # === 유틸리티 ===
 python-dotenv>=1.0.1
