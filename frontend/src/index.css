@@ -91,7 +91,7 @@ body {
   }
 
   .message-ai {
-    @apply bg-surface/80 backdrop-blur-sm border border-surface-border text-content-primary;
+    @apply bg-dark-700 border border-surface-border text-content-primary;
     @apply rounded-2xl rounded-bl-md;
   }
 

@@ -72,7 +72,7 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
   }, [clearChat, terminateSession]);
 
   return (
-    <div className="flex h-full flex-col card overflow-hidden">
+    <div className="flex h-full min-h-[500px] flex-col card overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-center justify-between border-b border-surface-border px-4 py-3 bg-dark-800/50">
         <div className="flex items-center gap-3">
@@ -114,8 +114,8 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
         <MessageList
           messages={messages}
           pendingQueryId={pendingQueryId}
-          onApproveQuery={awaitingConfirmation ? handleApproveQuery : undefined}
-          onRejectQuery={awaitingConfirmation ? handleRejectQuery : undefined}
+          onApproveQuery={handleApproveQuery}
+          onRejectQuery={handleRejectQuery}
           isLoading={isLoading}
           currentStatus={currentStatus}
         />

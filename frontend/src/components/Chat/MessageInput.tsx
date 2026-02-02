@@ -4,7 +4,7 @@
  * 사용자가 자연어 질문을 입력할 수 있는 텍스트 입력 UI를 제공합니다.
  */
 
-import { useState, useRef, useEffect, KeyboardEvent, FormEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, FormEvent } from "react";
 
 interface MessageInputProps {
   /** 메시지 전송 핸들러 */
@@ -26,7 +26,7 @@ export function MessageInput({
   placeholder = '자연어로 질문해보세요. 예: "지난달 매출 상위 10개 제품이 뭐야?"',
   autoFocus = true,
 }: MessageInputProps) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 자동 포커스
@@ -39,7 +39,7 @@ export function MessageInput({
   // 텍스트 영역 높이 자동 조절
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
     }
   }, [message]);
@@ -48,17 +48,17 @@ export function MessageInput({
     e.preventDefault();
     if (message.trim() && !disabled && !isLoading) {
       onSend(message.trim());
-      setMessage('');
+      setMessage("");
       // 높이 초기화
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = "auto";
       }
     }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter로 전송 (Shift+Enter는 줄바꿈)
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -78,7 +78,7 @@ export function MessageInput({
           placeholder={placeholder}
           disabled={isDisabled}
           rows={1}
-          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="메시지 입력"
         />
         <button
