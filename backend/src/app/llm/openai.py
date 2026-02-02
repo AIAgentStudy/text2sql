@@ -1,7 +1,7 @@
 """
 OpenAI LLM 프로바이더
 
-GPT-4o 및 GPT-4o-mini 모델을 지원합니다.
+GPT-4o-mini 및 GPT-5-mini 모델을 지원합니다.
 """
 
 import logging
@@ -31,7 +31,7 @@ class OpenAIProvider:
         return settings.openai_api_key
 
     def get_chat_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """채팅 모델 인스턴스 반환 (GPT-4o)"""
+        """채팅 모델 인스턴스 반환 (GPT-4o-mini)"""
         api_key = self._get_api_key()
         settings = get_settings()
 
@@ -49,7 +49,7 @@ class OpenAIProvider:
         )
 
     def get_fast_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """빠른 모델 인스턴스 반환 (GPT-4o-mini, 검증용)"""
+        """빠른 모델 인스턴스 반환 (GPT-5-mini, 검증용)"""
         api_key = self._get_api_key()
         settings = get_settings()
 

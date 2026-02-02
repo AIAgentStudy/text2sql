@@ -43,15 +43,15 @@ class LLMProvider(Protocol):
 # 기본 모델 설정
 DEFAULT_MODELS = {
     "openai": {
-        "chat": "gpt-4o",
-        "fast": "gpt-4o-mini",
+        "chat": "gpt-4o-mini",
+        "fast": "gpt-5-mini",
     },
     "anthropic": {
-        "chat": "claude-3-5-sonnet-latest",
-        "fast": "claude-3-5-haiku-latest",
+        "chat": "claude-sonnet-4-5",
+        "fast": "claude-haiku-4-5",
     },
     "google": {
-        "chat": "gemini-1.5-pro",
-        "fast": "gemini-1.5-flash",
+        "chat": "gemini-2.5-flash",
+        "fast": "gemini-2.5-flash-lite",
     },
 }

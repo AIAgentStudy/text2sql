@@ -1,7 +1,7 @@
 """
 Anthropic LLM 프로바이더
 
-Claude 3.5 Sonnet 및 Haiku 모델을 지원합니다.
+Claude 4.5 Sonnet 및 Haiku 모델을 지원합니다.
 """
 
 import logging
@@ -31,7 +31,7 @@ class AnthropicProvider:
         return settings.anthropic_api_key
 
     def get_chat_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """채팅 모델 인스턴스 반환 (Claude 3.5 Sonnet)"""
+        """채팅 모델 인스턴스 반환 (Claude 4.5 Sonnet)"""
         api_key = self._get_api_key()
         settings = get_settings()
 
@@ -49,7 +49,7 @@ class AnthropicProvider:
         )
 
     def get_fast_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """빠른 모델 인스턴스 반환 (Claude 3.5 Haiku, 검증용)"""
+        """빠른 모델 인스턴스 반환 (Claude 4.5 Haiku, 검증용)"""
         api_key = self._get_api_key()
 
         model_name = (

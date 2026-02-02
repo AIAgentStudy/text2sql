@@ -1,7 +1,7 @@
 """
 Google LLM 프로바이더
 
-Gemini 1.5 Pro 및 Flash 모델을 지원합니다.
+Gemini 2.5 Flash 및 Flash-Lite 모델을 지원합니다.
 """
 
 import logging
@@ -31,7 +31,7 @@ class GoogleProvider:
         return settings.google_ai_api_key
 
     def get_chat_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """채팅 모델 인스턴스 반환 (Gemini 1.5 Pro)"""
+        """채팅 모델 인스턴스 반환 (Gemini 2.5 Flash)"""
         api_key = self._get_api_key()
         settings = get_settings()
 
@@ -49,7 +49,7 @@ class GoogleProvider:
         )
 
     def get_fast_model(self, config: LLMConfig | None = None) -> BaseChatModel:
-        """빠른 모델 인스턴스 반환 (Gemini 1.5 Flash, 검증용)"""
+        """빠른 모델 인스턴스 반환 (Gemini 2.5 Flash-Lite, 검증용)"""
         api_key = self._get_api_key()
 
         model_name = (
