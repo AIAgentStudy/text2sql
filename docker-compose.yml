@@ -75,7 +75,7 @@ services:
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-text2sql}
 
       # CORS 설정
-      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:5173", "http://localhost"]'
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
