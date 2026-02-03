@@ -67,7 +67,8 @@ async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, objec
 
     # 테이블 형식 응답
     rows = state.get("query_result", [])
-    columns = state.get("result_columns", [])
+    raw_columns = state.get("result_columns", [])
+    columns = [col["name"] if isinstance(col, dict) else col for col in raw_columns]
     execution_time = state.get("execution_time_ms", 0)
 
     return {

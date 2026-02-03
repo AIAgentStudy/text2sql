@@ -199,7 +199,11 @@ async def chat_endpoint(
                     columns = final_state.get("result_columns", [])
 
                     column_infos = [
-                        ColumnInfo(name=col, data_type="unknown", is_nullable=True)
+                        ColumnInfo(
+                            name=col["name"] if isinstance(col, dict) else col,
+                            data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
+                            is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                        )
                         for col in columns
                     ]
                     yield _format_sse_event(
@@ -340,7 +344,11 @@ async def confirm_query(
 
             result_columns = final_state.get("result_columns", [])
             column_infos = [
-                ColumnInfo(name=col, data_type="unknown", is_nullable=True)
+                ColumnInfo(
+                    name=col["name"] if isinstance(col, dict) else col,
+                    data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
+                    is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                )
                 for col in result_columns
             ]
             return ConfirmationResponse(

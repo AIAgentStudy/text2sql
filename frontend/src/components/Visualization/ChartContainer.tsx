@@ -11,6 +11,7 @@ import { BarChartComponent } from './BarChart';
 import { LineChartComponent } from './LineChart';
 import { PieChartComponent } from './PieChart';
 import { ChartSelector, type ChartType } from './ChartSelector';
+import { isNumericValue, toNumber } from '../../utils/typeChecks';
 
 interface ChartContainerProps {
   data: QueryResultData;
@@ -35,7 +36,7 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
       const dataType = col.data_type.toLowerCase();
       if (dataType === 'unknown') {
         const sampleValues = rows.slice(0, 5).map(r => r[col.name]).filter(v => v != null);
-        const isNumeric = sampleValues.length > 0 && sampleValues.every(v => typeof v === 'number');
+        const isNumeric = sampleValues.length > 0 && sampleValues.every(v => isNumericValue(v));
         if (isNumeric) numeric.push(col.name);
         else category.push(col.name);
         return;
@@ -95,15 +96,20 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
 
   // 차트 데이터 준비
   const chartData = useMemo(() => {
+    const numericSet = new Set(numericColumns);
     return rows.map((row) => {
       const item: Record<string, string | number> = {};
       columns.forEach((col) => {
         const value = row[col.name];
-        item[col.name] = typeof value === 'number' ? value : String(value ?? '');
+        if (numericSet.has(col.name) && isNumericValue(value)) {
+          item[col.name] = toNumber(value);
+        } else {
+          item[col.name] = typeof value === 'number' ? value : String(value ?? '');
+        }
       });
       return item;
     });
-  }, [rows, columns]);
+  }, [rows, columns, numericColumns]);
 
   // 데이터가 없거나 차트를 그릴 수 없는 경우
   if (rows.length === 0 || columns.length < 2) {

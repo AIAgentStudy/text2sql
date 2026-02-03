@@ -6,6 +6,8 @@ READ ONLY 트랜잭션, 타임아웃, 행 제한을 적용하여 쿼리를 실�
 
 import logging
 import time
+from datetime import date, datetime, time as dt_time
+from decimal import Decimal
 from typing import Any
 
 import asyncpg
@@ -38,6 +40,53 @@ DANGEROUS_KEYWORDS = frozenset(
         "EXECUTE",
     }
 )
+
+
+def _sanitize_row_values(row: dict[str, Any]) -> dict[str, Any]:
+    """
+    행 값에서 Decimal을 int/float로 변환합니다.
+
+    JSON 직렬화 시 Decimal이 문자열로 변환되는 문제를 방지합니다.
+    """
+    sanitized = {}
+    for key, value in row.items():
+        if isinstance(value, Decimal):
+            if value == value.to_integral_value():
+                sanitized[key] = int(value)
+            else:
+                sanitized[key] = float(value)
+        else:
+            sanitized[key] = value
+    return sanitized
+
+
+def _infer_column_type(rows: list[asyncpg.Record], column_name: str) -> str:
+    """
+    샘플 행의 Python 값으로 컬럼 타입을 추론합니다.
+    """
+    for row in rows[:10]:
+        value = row[column_name]
+        if value is None:
+            continue
+        if isinstance(value, bool):
+            return "boolean"
+        if isinstance(value, int):
+            return "integer"
+        if isinstance(value, Decimal):
+            if value == value.to_integral_value():
+                return "integer"
+            return "numeric"
+        if isinstance(value, float):
+            return "numeric"
+        if isinstance(value, datetime):
+            return "timestamp"
+        if isinstance(value, date):
+            return "date"
+        if isinstance(value, dt_time):
+            return "time"
+        if isinstance(value, str):
+            return "text"
+    return "unknown"
 
 
 def _quick_safety_check(query: str) -> None:
@@ -108,21 +157,22 @@ async def execute_safe_query(
             if is_truncated:
                 rows = rows[:max_row_limit]
 
-            # 컬럼 정보 추출
+            # 컬럼 정보 추출 (raw Record에서 타입 추론)
             columns: list[ColumnInfo] = []
             if rows:
-                # asyncpg Record에서 컬럼 정보 추출
                 for key in rows[0].keys():
                     columns.append(
                         ColumnInfo(
                             name=key,
-                            data_type="unknown",  # asyncpg에서 타입 정보 제한적
+                            data_type=_infer_column_type(rows, key),
                             is_nullable=True,
                         )
                     )
 
-            # dict로 변환
-            result_rows: list[dict[str, Any]] = [dict(row) for row in rows]
+            # dict로 변환 (Decimal → int/float 변환 포함)
+            result_rows: list[dict[str, Any]] = [
+                _sanitize_row_values(dict(row)) for row in rows
+            ]
 
             logger.info(
                 f"쿼리 실행 완료: {total_count}행, {execution_time_ms}ms"

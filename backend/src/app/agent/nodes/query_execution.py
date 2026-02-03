@@ -41,7 +41,10 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
 
         # 결과 처리
         rows = result.rows
-        columns = [col.name for col in result.columns]
+        columns = [
+            {"name": col.name, "data_type": col.data_type, "is_nullable": col.is_nullable}
+            for col in result.columns
+        ]
         total_count = result.total_row_count
         execution_time = result.execution_time_ms
 

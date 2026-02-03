@@ -71,8 +71,8 @@ class Text2SQLAgentState(TypedDict):
     query_result: list[dict[str, object]]
     """쿼리 실행 결과 (행 목록)"""
 
-    result_columns: list[str]
-    """결과 컬럼 목록"""
+    result_columns: list[dict[str, object]]
+    """결과 컬럼 목록 (name, data_type, is_nullable)"""
 
     total_row_count: int
     """전체 결과 행 수"""

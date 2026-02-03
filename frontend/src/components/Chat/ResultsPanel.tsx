@@ -8,6 +8,7 @@ import { useState, useMemo } from 'react';
 import type { QueryResultData } from '../../types';
 import { ResultTable } from './ResultTable';
 import { ChartContainer } from '../Visualization/ChartContainer';
+import { isNumericValue } from '../../utils/typeChecks';
 
 type TabType = 'table' | 'chart';
 
@@ -29,7 +30,7 @@ export function ResultsPanel({ result, query }: ResultsPanelProps) {
       const dataType = col.data_type.toLowerCase();
       if (dataType === 'unknown') {
         const sampleValues = rows.slice(0, 5).map(r => r[col.name]).filter(v => v != null);
-        return sampleValues.length > 0 && sampleValues.every(v => typeof v === 'number');
+        return sampleValues.length > 0 && sampleValues.every(v => isNumericValue(v));
       }
       return ['integer', 'bigint', 'smallint', 'decimal', 'numeric', 'real', 'double precision', 'float'].some(
         (t) => dataType.includes(t)
