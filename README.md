@@ -10,6 +10,7 @@ Text2SQL Agent는 비개발자도 자연어로 데이터베이스를 조회할 �
 
 - **자연어 쿼리**: "지난달 매출 상위 10개 제품이 뭐야?" 같은 자연어 질문을 SQL로 변환
 - **위험 쿼리 차단**: UPDATE, DELETE, DROP 등 데이터 변경 쿼리를 3단계 검증으로 100% 차단
+- **사용자 인증**: JWT 기반 회원가입/로그인 및 역할 권한 관리
 - **Human-in-the-Loop**: 쿼리 실행 전 사용자 확인을 통한 안전한 실행
 - **대화 맥락 유지**: "그중에 서울 지역만" 같은 연속 질문 지원
 - **사용자 친화적 오류 처리**: 모든 오류 상황에서 한국어 안내 메시지 제공
@@ -28,6 +29,7 @@ Text2SQL Agent는 비개발자도 자연어로 데이터베이스를 조회할 �
 - **React 18** - UI 라이브러리
 - **TypeScript** - 타입 안전성
 - **TanStack Query** - 서버 상태 관리
+- **React Router** - 라우팅
 - **Tailwind CSS** - 스타일링
 - **Vite** - 빌드 도구
 
@@ -42,7 +44,7 @@ text2sql/
 ├── backend/                 # 백엔드 API 서버
 │   ├── src/app/
 │   │   ├── agent/          # LangGraph 에이전트
-│   │   ├── api/            # FastAPI 라우터
+│   │   ├── api/            # FastAPI 라우터 (auth, chat 등)
 │   │   ├── database/       # DB 연결 및 스키마
 │   │   ├── llm/            # LLM 프로바이더
 │   │   ├── validation/     # 쿼리 검증
@@ -54,6 +56,7 @@ text2sql/
 │   ├── src/
 │   │   ├── components/     # React 컴포넌트
 │   │   ├── hooks/          # 커스텀 훅
+│   │   ├── pages/          # 페이지 (Login, Chat 등)
 │   │   ├── services/       # API 서비스
 │   │   └── types/          # TypeScript 타입
 │   ├── Dockerfile
@@ -140,6 +143,7 @@ npm run dev
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
+| POST | `/api/auth/*` | 회원가입, 로그인, 토큰 갱신 등 |
 | POST | `/api/chat` | 자연어 질문 처리 (SSE 스트리밍) |
 | POST | `/api/chat/confirm` | 쿼리 실행 확인/취소 |
 | POST | `/api/sessions` | 새 세션 생성 |

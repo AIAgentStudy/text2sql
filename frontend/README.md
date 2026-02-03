@@ -11,6 +11,7 @@ React와 TypeScript로 구축된 SPA(Single Page Application)로, SSE(Server-Sen
 - **React 18** - UI 라이브러리
 - **TypeScript** - 타입 안전성
 - **TanStack Query (React Query)** - 서버 상태 관리
+- **React Router** - 클라이언트 사이드 라우팅
 - **Tailwind CSS** - 유틸리티 기반 스타일링
 - **Vite** - 빌드 도구
 - **serve** - 프로덕션 정적 파일 서빙
@@ -21,6 +22,7 @@ React와 TypeScript로 구축된 SPA(Single Page Application)로, SSE(Server-Sen
 frontend/
 ├── src/
 │   ├── components/         # React 컴포넌트
+│   │   ├── Auth/           # 인증 관련 컴포넌트
 │   │   ├── Chat/
 │   │   │   ├── ChatContainer.tsx   # 채팅 메인 컨테이너
 │   │   │   ├── MessageList.tsx     # 메시지 목록
@@ -33,6 +35,11 @@ frontend/
 │   ├── hooks/              # 커스텀 훅
 │   │   ├── useSession.ts   # 세션 관리
 │   │   └── useChat.ts      # 채팅 및 SSE 처리
+│   ├── pages/              # 페이지 컴포넌트
+│   │   ├── LoginPage.tsx
+│   │   ├── RegisterPage.tsx
+│   │   ├── ChatPage.tsx
+│   │   └── GuidePage.tsx
 │   ├── services/           # API 서비스
 │   │   └── api.ts          # API 클라이언트
 │   ├── types/              # TypeScript 타입
@@ -89,6 +96,13 @@ docker run -p 3000:80 text2sql-frontend
 ```
 
 ## 주요 컴포넌트
+
+### Pages
+
+- **LoginPage**: 사용자 로그인 페이지
+- **RegisterPage**: 회원가입 페이지
+- **ChatPage**: 메인 채팅 인터페이스
+- **GuidePage**: 사용 가이드 및 도움말 페이지
 
 ### ChatContainer
 

@@ -33,6 +33,7 @@ backend/
 │   │       └── response_formatting.py
 │   ├── api/                # FastAPI 라우터
 │   │   ├── routes/
+│   │   │   ├── auth.py     # 인증 엔드포인트
 │   │   │   ├── chat.py     # 채팅 엔드포인트
 │   │   │   ├── session.py  # 세션 관리
 │   │   │   ├── schema.py   # 스키마 조회
@@ -117,6 +118,16 @@ docker run -p 8000:8000 \
 ```
 
 ## API 엔드포인트
+
+### 인증
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/api/auth/register` | 회원가입 |
+| POST | `/api/auth/login` | 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
+| POST | `/api/auth/refresh` | 토큰 갱신 |
+| GET | `/api/auth/me` | 현재 사용자 정보 |
 
 ### 채팅
 
@@ -261,6 +272,10 @@ data: {"type": "done", "awaiting_confirmation": false}
 | `QUERY_TIMEOUT_MS` | 쿼리 타임아웃 | 30000 |
 | `MAX_RESULT_ROWS` | 최대 결과 행 | 10000 |
 | `AUTO_CONFIRM_QUERIES` | 자동 확인 모드 | true |
+| `JWT_SECRET_KEY` | JWT 서명 비밀키 | (필수/변경요망) |
+| `JWT_ALGORITHM` | JWT 알고리즘 | HS256 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | 액세스 토큰 만료(분) | 30 |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | 리프레시 토큰 만료(일) | 7 |
 | `CORS_ORIGINS` | CORS 허용 오리진 | ["http://localhost:3000"] |
 
 ## 테스트
