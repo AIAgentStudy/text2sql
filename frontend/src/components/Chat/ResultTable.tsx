@@ -96,8 +96,8 @@ export function ResultTable({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-        <p className="text-gray-500">조건에 맞는 데이터가 없습니다.</p>
+      <div className="rounded-xl glass p-8 text-center">
+        <p className="text-content-secondary">조건에 맞는 데이터가 없습니다.</p>
       </div>
     );
   }
@@ -113,18 +113,18 @@ export function ResultTable({
       )}
 
       {/* 결과 요약 */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-content-secondary">
         <span>
           총 {total_row_count.toLocaleString()}개 중 {returned_row_count.toLocaleString()}개 표시
-          {is_truncated && <span className="ml-2 text-amber-600">(결과가 잘렸습니다)</span>}
+          {is_truncated && <span className="ml-2 text-amber-400">(결과가 잘렸습니다)</span>}
         </span>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowVisualization(!showVisualization)}
-            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
               showVisualization
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-primary-600/20 text-primary-400 border border-primary-500/30'
+                : 'glass text-content-secondary hover:text-content-primary hover:bg-surface-hover'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,22 +132,22 @@ export function ResultTable({
             </svg>
             시각화
           </button>
-          <span className="text-gray-400">
+          <span className="text-content-tertiary">
             실행 시간: {execution_time_ms.toFixed(0)}ms
           </span>
         </div>
       </div>
 
       {/* 테이블 */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-xl glass">
+        <table className="table-dark min-w-full">
+          <thead>
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.name}
                   onClick={() => handleSort(column.name)}
-                  className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:bg-gray-100"
+                  className="cursor-pointer hover:bg-surface-hover transition-colors"
                   style={{ maxWidth: maxColumnWidth }}
                 >
                   <div className="flex items-center gap-1">
@@ -168,24 +168,24 @@ export function ResultTable({
                       </svg>
                     )}
                   </div>
-                  <span className="text-xs font-normal normal-case text-gray-400">
+                  <span className="text-xs font-normal normal-case text-content-tertiary">
                     {column.data_type}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody>
             {paginatedRows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
+              <tr key={rowIndex}>
                 {columns.map((column) => {
                   const columnType = getColumnType(column);
                   return (
                     <td
                       key={column.name}
-                      className={`whitespace-nowrap px-4 py-3 text-sm ${
+                      className={`whitespace-nowrap ${
                         columnType === 'number' ? 'text-right font-mono' : 'text-left'
-                      } ${row[column.name] === null ? 'text-gray-400 italic' : 'text-gray-900'}`}
+                      } ${row[column.name] === null ? 'text-content-tertiary italic' : ''}`}
                       style={{ maxWidth: maxColumnWidth }}
                     >
                       <span className="block truncate" title={formatCellValue(row[column.name])}>
@@ -203,35 +203,35 @@ export function ResultTable({
       {/* 페이지네이션 */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-content-secondary">
             {currentPage} / {totalPages} 페이지
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-50"
             >
               처음
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-50"
             >
               이전
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-50"
             >
               다음
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-50"
             >
               마지막
             </button>

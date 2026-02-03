@@ -13,10 +13,10 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// 차트 색상 팔레트
+// 다크 테마용 차트 색상 팔레트 (보라/파랑 계열)
 const COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+  '#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981',
+  '#f59e0b', '#ec4899', '#84cc16', '#f97316', '#8b5cf6',
 ];
 
 interface PieChartProps {
@@ -89,10 +89,11 @@ export function PieChartComponent({ data, dataKey, nameKey }: PieChartProps) {
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            backgroundColor: 'rgba(26, 26, 46, 0.95)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            color: '#f8fafc',
           }}
           formatter={(value: number) => [value.toLocaleString(), '']}
         />
@@ -101,7 +102,7 @@ export function PieChartComponent({ data, dataKey, nameKey }: PieChartProps) {
           align="right"
           verticalAlign="middle"
           formatter={(value: string) => (
-            <span style={{ color: '#374151', fontSize: '12px' }}>{value}</span>
+            <span style={{ color: '#94a3b8', fontSize: '12px' }}>{value}</span>
           )}
         />
       </PieChart>

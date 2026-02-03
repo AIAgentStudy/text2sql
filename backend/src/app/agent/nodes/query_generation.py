@@ -286,8 +286,9 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         }
 
     try:
-        # LLM 모델 가져오기
-        llm = get_chat_model()
+        # LLM 모델 가져오기 (state에서 선택한 provider 사용)
+        llm_provider = state.get("llm_provider", "openai")
+        llm = get_chat_model(provider_type=llm_provider)
 
         # 맥락 인식 프롬프트 생성
         if has_context_reference and message_history:

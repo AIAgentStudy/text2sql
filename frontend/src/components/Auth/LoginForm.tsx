@@ -2,8 +2,8 @@
  * 로그인 폼 컴포넌트
  */
 
-import { useState, type FormEvent } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useState, type FormEvent } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -12,8 +12,8 @@ interface LoginFormProps {
 
 export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,7 +26,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
       await login({ email, password });
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
+      setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -34,11 +34,11 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             이메일
           </label>
@@ -49,7 +49,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="email@example.com"
           />
         </div>
@@ -57,7 +57,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호
           </label>
@@ -68,13 +68,13 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="********"
           />
         </div>
 
         {error && (
-          <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+          <div className="text-red-700 text-sm bg-red-300/70 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
@@ -82,21 +82,45 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="btn-primary w-full"
         >
-          {isLoading ? '로그인 중...' : '로그인'}
+          {isLoading ? "로그인 중..." : "로그인"}
         </button>
       </form>
 
-      <div className="mt-4 text-center text-sm text-gray-600">
-        계정이 없으신가요?{' '}
+      <div className="mt-6 text-center font-semibold text-sm text-gray-300">
+        계정이 없으신가요?{" "}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-blue-600 hover:text-blue-800 font-medium"
+          className="text-blue-400 hover:text-blue-800 font-semibold transition-colors"
         >
           회원가입
         </button>
+      </div>
+
+      {/* 테스트 계정 안내 */}
+      <div className="mt-6 p-4 bg-surface-secondary/50 rounded-xl border border-surface-border bg-gray-100">
+        <p className="text-xs text-black mb-3 text-center font-medium">
+          테스트 계정
+        </p>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between items-center text-black">
+            <span className="text-amber-400 font-semibold">Admin</span>
+            <span className="font-mono">admin@test.com / admin123</span>
+          </div>
+          <div className="flex justify-between items-center text-black">
+            <span className="text-blue-400 font-semibold">Manager</span>
+            <span className="font-mono">manager@test.com / admin123</span>
+          </div>
+          <div className="flex justify-between items-center text-black">
+            <span className="text-green-400 font-semibold">Viewer</span>
+            <span className="font-mono">viewer@test.com / admin123</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          역할별로 조회 가능한 테이블이 다릅니다
+        </p>
       </div>
     </div>
   );

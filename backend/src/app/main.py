@@ -16,6 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from app.config import get_settings, setup_logging
 from app.database.connection import close_pool, create_pool
+from app.database.schema import get_database_schema
 from app.errors.handlers import register_error_handlers
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error(f"데이터베이스 연결 실패: {e}")
         # 연결 실패해도 서버는 시작 (헬스체크에서 확인 가능)
 
+    # 스키마 미리 로드 (Eager Loading) - 첫 요청 지연 제거
+    try:
+        schema = await get_database_schema()
+        logger.info(f"스키마 캐시 미리 로드 완료: {len(schema.tables)}개 테이블")
+    except Exception as e:
+        logger.warning(f"스키마 미리 로드 실패 (첫 요청 시 재시도됨): {e}")
+
     yield
 
     # 종료 시
@@ -126,13 +134,14 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
 
     # 라우터 등록
-    from app.api.routes import auth, chat, health, schema, session
+    from app.api.routes import auth, chat, graph, health, schema, session
 
     app.include_router(health.router, prefix="/api", tags=["Health"])
     app.include_router(auth.router, prefix="/api", tags=["Auth"])
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
     app.include_router(session.router, prefix="/api", tags=["Session"])
     app.include_router(schema.router, prefix="/api", tags=["Schema"])
+    app.include_router(graph.router, prefix="/api", tags=["Graph"])
 
     return app
 

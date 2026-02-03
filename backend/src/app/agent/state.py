@@ -20,6 +20,9 @@ class Text2SQLAgentState(TypedDict):
     session_id: str
     """세션 ID"""
 
+    llm_provider: Literal["openai", "anthropic", "google"]
+    """사용할 LLM 프로바이더"""
+
     # === 대화 컨텍스트 ===
     messages: Annotated[list[BaseMessage], add_messages]
     """대화 히스토리 (add_messages 리듀서로 자동 누적)"""
@@ -94,12 +97,14 @@ def create_initial_state(
     accessible_tables: list[str] | None = None,
     user_id: int | None = None,
     user_roles: list[str] | None = None,
+    llm_provider: Literal["openai", "anthropic", "google"] = "openai",
 ) -> Text2SQLAgentState:
     """초기 에이전트 상태 생성"""
     return Text2SQLAgentState(
         # 입력
         user_question=user_question,
         session_id=session_id,
+        llm_provider=llm_provider,
         # 대화 컨텍스트
         messages=[],
         # 스키마 컨텍스트

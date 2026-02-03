@@ -30,7 +30,7 @@ def filter_schema_by_accessible_tables(
     """
     if not accessible_tables:
         # 접근 가능한 테이블이 없으면 빈 스키마 반환
-        return DatabaseSchema(tables=[], retrieved_at=schema.retrieved_at)
+        return DatabaseSchema(tables=[], last_updated_at=schema.last_updated_at)
 
     # 접근 가능한 테이블만 필터링
     filtered_tables = [
@@ -38,7 +38,7 @@ def filter_schema_by_accessible_tables(
         if table.name.lower() in [t.lower() for t in accessible_tables]
     ]
 
-    return DatabaseSchema(tables=filtered_tables, retrieved_at=schema.retrieved_at)
+    return DatabaseSchema(tables=filtered_tables, last_updated_at=schema.last_updated_at)
 
 
 async def schema_retrieval_node(state: Text2SQLAgentState) -> dict[str, object]:

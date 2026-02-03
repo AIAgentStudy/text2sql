@@ -40,7 +40,6 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
     isLoading,
     currentStatus,
     awaitingConfirmation,
-    pendingQueryId,
     sendMessage,
     confirmQuery,
     clearChat,
@@ -72,25 +71,27 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
   }, [clearChat, terminateSession]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-[500px] flex-col card overflow-hidden">
       {/* 헤더 */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between border-b border-surface-border px-4 py-3 bg-dark-800/50">
+        <div className="flex items-center gap-3">
           <div
-            className={`h-2 w-2 rounded-full ${
-              sessionId ? 'bg-green-500' : 'bg-gray-300'
+            className={`h-2.5 w-2.5 rounded-full ${
+              sessionId
+                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                : 'bg-content-muted'
             }`}
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-white font-medium">
             {sessionId ? '세션 연결됨' : '세션 대기 중'}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <select
             value={selectedProvider}
             onChange={(e) => setSelectedProvider(e.target.value as LLMProvider)}
             disabled={isLoading}
-            className="rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
+            className="bg-dark-700 border border-surface-border text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50"
           >
             {LLM_PROVIDERS.map((provider) => (
               <option key={provider.value} value={provider.value}>
@@ -100,7 +101,7 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
           </select>
           <button
             onClick={handleNewChat}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-white font-medium hover:text-primary-300 transition-colors duration-200 px-3 py-1.5 rounded-lg hover:bg-surface-hover"
           >
             새 대화
           </button>
@@ -111,16 +112,15 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
       <div className="min-h-0 flex-1 overflow-hidden">
         <MessageList
           messages={messages}
-          pendingQueryId={pendingQueryId}
-          onApproveQuery={awaitingConfirmation ? handleApproveQuery : undefined}
-          onRejectQuery={awaitingConfirmation ? handleRejectQuery : undefined}
+          onApproveQuery={handleApproveQuery}
+          onRejectQuery={handleRejectQuery}
           isLoading={isLoading}
           currentStatus={currentStatus}
         />
       </div>
 
       {/* 입력창 */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-surface-border p-4">
         <MessageInput
           onSend={sendMessage}
           disabled={awaitingConfirmation}

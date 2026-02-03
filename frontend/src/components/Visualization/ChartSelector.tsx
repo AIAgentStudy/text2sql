@@ -48,16 +48,16 @@ export function ChartSelector({ selected, recommended, onChange }: ChartSelector
         <button
           key={option.type}
           onClick={() => onChange(option.type)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 ${
             selected === option.type
-              ? 'border-blue-500 bg-blue-50 text-blue-700'
-              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+              ? 'border-primary-500/50 bg-primary-600/20 text-primary-300'
+              : 'border-surface-border bg-surface/50 text-content-secondary hover:border-primary-500/30 hover:bg-surface-hover hover:text-content-primary'
           }`}
         >
           {option.icon}
           <span className="text-sm font-medium">{option.label}</span>
           {recommended === option.type && (
-            <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">
               추천
             </span>
           )}

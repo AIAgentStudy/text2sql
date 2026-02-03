@@ -190,8 +190,9 @@ async def query_validation_node(
         schema = await get_database_schema()
 
         # LLM 가져오기 (시맨틱 검증용)
-        # 빠른 모델 사용
-        llm = get_llm(use_fast_model=True)
+        # 빠른 모델 사용, state에서 선택한 provider 사용
+        llm_provider = state.get("llm_provider", "openai")
+        llm = get_llm(provider_type=llm_provider, use_fast_model=True)
 
         # 검증 파이프라인 실행
         result = await validate_query_pipeline(

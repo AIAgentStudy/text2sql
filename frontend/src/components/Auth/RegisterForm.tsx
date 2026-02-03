@@ -50,11 +50,11 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             이름
           </label>
@@ -65,7 +65,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             onChange={(e) => setName(e.target.value)}
             required
             autoComplete="name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="홍길동"
           />
         </div>
@@ -73,7 +73,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             이메일
           </label>
@@ -84,7 +84,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="email@example.com"
           />
         </div>
@@ -92,7 +92,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호
           </label>
@@ -103,7 +103,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="new-password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="8자 이상"
           />
         </div>
@@ -111,7 +111,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             비밀번호 확인
           </label>
@@ -122,7 +122,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             autoComplete="new-password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="input-dark w-full"
             placeholder="비밀번호 재입력"
           />
         </div>
@@ -130,7 +130,7 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <div>
           <label
             htmlFor="role"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-white mb-2"
           >
             역할 선택
           </label>
@@ -138,18 +138,18 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value as 'viewer' | 'manager')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="select-dark w-full"
           >
-            <option value="viewer">조회자 (Viewer) - 읽기 전용</option>
-            <option value="manager">매니저 (Manager) - 읽기/쓰기</option>
+            <option value="viewer">조회자 (Viewer)</option>
+            <option value="manager">매니저 (Manager)</option>
           </select>
-          <p className="mt-1 text-xs text-gray-500">
-            역할에 따라 시스템 접근 권한이 달라집니다.
+          <p className="mt-2 text-xs text-gray-300">
+            역할에 따라 조회 가능한 테이블이 달라집니다.
           </p>
         </div>
 
         {error && (
-          <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+          <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
@@ -157,18 +157,18 @@ export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          className="btn-primary w-full"
         >
           {isLoading ? '회원가입 중...' : '회원가입'}
         </button>
       </form>
 
-      <div className="mt-4 text-center text-sm text-gray-600">
+      <div className="mt-6 text-center text-sm text-white">
         이미 계정이 있으신가요?{' '}
         <button
           type="button"
           onClick={onLoginClick}
-          className="text-blue-600 hover:text-blue-800 font-medium"
+          className="text-primary-300 hover:text-primary-200 font-semibold underline transition-colors"
         >
           로그인
         </button>

@@ -52,10 +52,7 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:-text2sql_dev}
       DB_NAME: ${POSTGRES_DB:-text2sql_db}
 
-      # LLM API 키 (호스트 환경에서 전달)
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+      # LLM API 키는 ./backend/.env 파일에서 로드됨 (env_file)
 
       # LLM 설정
       DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-openai}

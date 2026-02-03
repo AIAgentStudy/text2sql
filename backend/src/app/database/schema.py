@@ -23,6 +23,75 @@ _schema_cache: DatabaseSchema | None = None
 _cache_updated_at: datetime | None = None
 SCHEMA_CACHE_TTL = timedelta(hours=1)
 
+# 스키마 변경 감지 설정
+SCHEMA_VERSION_CHECK_INTERVAL = timedelta(minutes=5)  # 버전 체크 주기
+_last_version_check: datetime | None = None
+
+
+async def _get_schema_version_hash() -> str:
+    """
+    데이터베이스 스키마 버전 해시만 빠르게 조회
+
+    테이블명과 컬럼명만 조회하여 해시 생성 (전체 스키마 조회보다 빠름)
+
+    Returns:
+        str: 스키마 버전 해시 (8자)
+    """
+    async with get_connection() as conn:
+        query = """
+            SELECT
+                c.table_name,
+                array_agg(c.column_name ORDER BY c.ordinal_position) as columns
+            FROM information_schema.columns c
+            JOIN information_schema.tables t
+                ON c.table_schema = t.table_schema
+                AND c.table_name = t.table_name
+            WHERE c.table_schema = 'public'
+                AND t.table_type = 'BASE TABLE'
+            GROUP BY c.table_name
+            ORDER BY c.table_name
+        """
+        rows = await conn.fetch(query)
+
+    schema_str = str([(row["table_name"], list(row["columns"])) for row in rows])
+    return hashlib.md5(schema_str.encode()).hexdigest()[:8]
+
+
+async def _check_schema_changed() -> bool:
+    """
+    스키마 변경 여부 확인
+
+    마지막 체크 이후 일정 시간이 지났을 때만 실제로 DB 조회
+
+    Returns:
+        bool: 스키마가 변경되었으면 True
+    """
+    global _last_version_check
+
+    if _schema_cache is None:
+        return True
+
+    now = datetime.utcnow()
+
+    # 버전 체크 주기가 지나지 않았으면 변경 없음으로 간주
+    if _last_version_check is not None:
+        if now - _last_version_check < SCHEMA_VERSION_CHECK_INTERVAL:
+            return False
+
+    _last_version_check = now
+
+    try:
+        current_version = await _get_schema_version_hash()
+        if current_version != _schema_cache.version:
+            logger.info(
+                f"스키마 변경 감지: {_schema_cache.version} → {current_version}"
+            )
+            return True
+    except Exception as e:
+        logger.warning(f"스키마 버전 체크 실패: {e}")
+
+    return False
+
 
 async def get_database_schema(force_refresh: bool = False) -> DatabaseSchema:
     """
@@ -39,8 +108,12 @@ async def get_database_schema(force_refresh: bool = False) -> DatabaseSchema:
     # 캐시 확인
     if not force_refresh and _schema_cache is not None and _cache_updated_at is not None:
         if datetime.utcnow() - _cache_updated_at < SCHEMA_CACHE_TTL:
-            logger.debug("스키마 캐시 사용")
-            return _schema_cache
+            # 스키마 변경 감지 (주기적으로 버전 해시만 체크)
+            if await _check_schema_changed():
+                logger.info("스키마 변경으로 인한 캐시 갱신")
+            else:
+                logger.debug("스키마 캐시 사용")
+                return _schema_cache
 
     logger.info("데이터베이스 스키마 조회 시작")
 
@@ -243,7 +316,8 @@ def format_schema_for_llm(schema: DatabaseSchema) -> str:
 
 def clear_schema_cache() -> None:
     """스키마 캐시 초기화"""
-    global _schema_cache, _cache_updated_at
+    global _schema_cache, _cache_updated_at, _last_version_check
     _schema_cache = None
     _cache_updated_at = None
+    _last_version_check = None
     logger.info("스키마 캐시 초기화됨")
