@@ -203,6 +203,27 @@ async def query_validation_node(
         )
 
         if result.is_valid:
+            # 권한 검증: accessible_tables에 포함되지 않은 테이블 참조 차단
+            accessible_tables = state.get("accessible_tables", [])
+            if accessible_tables:
+                from app.auth.permissions import extract_tables_from_query
+
+                referenced_tables = extract_tables_from_query(generated_query)
+                accessible_lower = [t.lower() for t in accessible_tables]
+                unauthorized = [
+                    t for t in referenced_tables if t.lower() not in accessible_lower
+                ]
+                if unauthorized:
+                    logger.warning(
+                        f"권한 없는 테이블 접근 시도: {unauthorized}"
+                    )
+                    return {
+                        "is_query_valid": False,
+                        "validation_errors": [
+                            f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}"
+                        ],
+                    }
+
             return {
                 "is_query_valid": True,
                 "validation_errors": [],

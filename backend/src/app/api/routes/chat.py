@@ -317,8 +317,30 @@ async def confirm_query(
                 error=None,
             )
 
-        # 승인 시 Command(resume)로 워크플로우 재개
+        # 승인 시 권한 재검증
         logger.info(f"사용자가 쿼리 실행을 승인함: {query_id}")
+
+        # 현재 사용자의 권한으로 쿼리 재검증
+        graph_state = await graph.aget_state(config)
+        generated_query = graph_state.values.get("generated_query", "") if graph_state.values else ""
+        if generated_query:
+            from app.auth.permissions import validate_query_permission
+
+            has_permission, unauthorized_tables = await validate_query_permission(
+                current_user, generated_query
+            )
+            if not has_permission:
+                logger.warning(
+                    f"권한 재검증 실패 - 비인가 테이블: {unauthorized_tables}"
+                )
+                return ConfirmationResponse(
+                    success=False,
+                    result=None,
+                    error=ErrorDetail(
+                        code="PERMISSION_DENIED",
+                        message=f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized_tables)}",
+                    ),
+                )
 
         # Command로 워크플로우 재개
         final_state = {}

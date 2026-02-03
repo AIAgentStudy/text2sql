@@ -66,6 +66,15 @@ async def schema_retrieval_node(state: Text2SQLAgentState) -> dict[str, object]:
             schema = filter_schema_by_accessible_tables(schema, accessible_tables)
             logger.info(f"권한에 따라 스키마 필터링 - 접근 가능: {len(accessible_tables)}개 테이블")
 
+        # 필터링 후 접근 가능한 테이블이 없으면 즉시 에러 반환
+        if accessible_tables and len(schema.tables) == 0:
+            logger.warning("접근 가능한 테이블이 없음 - 권한 부족")
+            return {
+                "database_schema": "",
+                "relevant_tables": [],
+                "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
+            }
+
         # LLM 프롬프트용 문자열로 변환
         schema_str = format_schema_for_llm(schema)
 

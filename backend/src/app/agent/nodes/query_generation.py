@@ -275,6 +275,17 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     user_question = state["user_question"]
     message_history = state.get("messages", [])
 
+    # 접근 가능한 테이블이 없으면 LLM 호출 없이 즉시 에러 반환 (이중 안전장치)
+    accessible_tables = state.get("accessible_tables", [])
+    if accessible_tables is not None and len(accessible_tables) == 0:
+        logger.warning("접근 가능한 테이블이 없음 - LLM 호출 생략")
+        return {
+            "generation_attempt": attempt,
+            "generated_query": "",
+            "query_explanation": "",
+            "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
+        }
+
     logger.info(
         f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
     )

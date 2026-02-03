@@ -50,14 +50,14 @@ export function ChartSelector({ selected, recommended, onChange }: ChartSelector
           onClick={() => onChange(option.type)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 ${
             selected === option.type
-              ? 'border-primary-500/50 bg-primary-600/20 text-primary-300'
-              : 'border-surface-border bg-surface/50 text-content-secondary hover:border-primary-500/30 hover:bg-surface-hover hover:text-content-primary'
+              ? 'border-primary-500 bg-white text-gray-900 shadow-sm'
+              : 'border-gray-300 bg-white/90 text-gray-700 hover:bg-white hover:text-gray-900 hover:border-gray-400'
           }`}
         >
           {option.icon}
           <span className="text-sm font-medium">{option.label}</span>
           {recommended === option.type && (
-            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">
+            <span className="text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded-md font-medium">
               추천
             </span>
           )}

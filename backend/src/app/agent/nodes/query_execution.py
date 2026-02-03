@@ -33,6 +33,29 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
             "response_format": "error",
         }
 
+    # 최종 권한 체크 (defense-in-depth)
+    accessible_tables = state.get("accessible_tables", [])
+    if accessible_tables:
+        from app.auth.permissions import extract_tables_from_query
+
+        referenced_tables = extract_tables_from_query(query)
+        accessible_lower = [t.lower() for t in accessible_tables]
+        unauthorized = [
+            t for t in referenced_tables if t.lower() not in accessible_lower
+        ]
+        if unauthorized:
+            logger.warning(
+                f"실행 단계에서 권한 없는 테이블 접근 차단: {unauthorized}"
+            )
+            return {
+                "query_result": [],
+                "result_columns": [],
+                "total_row_count": 0,
+                "execution_time_ms": 0,
+                "execution_error": f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}",
+                "response_format": "error",
+            }
+
     logger.info(f"쿼리 실행 시작 - 쿼리: {query[:100]}...")
 
     try:

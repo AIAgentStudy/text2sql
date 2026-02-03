@@ -84,13 +84,13 @@ export function ResultsPanel({ result, query }: ResultsPanelProps) {
 
       {/* 탭 바 (시각화 가능한 경우에만 표시) */}
       {canVisualize && (
-        <div className="flex border-b border-surface-border px-4 bg-dark-800/30 flex-shrink-0">
+        <div className="flex border-b border-surface-border px-4 bg-dark-700/50 flex-shrink-0">
           <button
             onClick={() => setActiveTab('table')}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 ${
               activeTab === 'table'
-                ? 'border-primary-500 text-primary-400'
-                : 'border-transparent text-content-tertiary hover:text-content-secondary'
+                ? 'border-primary-500 text-primary-400 bg-primary-500/10'
+                : 'border-transparent text-content-tertiary hover:text-content-secondary hover:bg-dark-600/30'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -109,8 +109,8 @@ export function ResultsPanel({ result, query }: ResultsPanelProps) {
             onClick={() => setActiveTab('chart')}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 ${
               activeTab === 'chart'
-                ? 'border-primary-500 text-primary-400'
-                : 'border-transparent text-content-tertiary hover:text-content-secondary'
+                ? 'border-primary-500 text-primary-400 bg-primary-500/10'
+                : 'border-transparent text-content-tertiary hover:text-content-secondary hover:bg-dark-600/30'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -129,7 +129,7 @@ export function ResultsPanel({ result, query }: ResultsPanelProps) {
       )}
 
       {/* 컨텐츠 */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className={`flex-1 overflow-auto p-4 ${activeTab === 'chart' && canVisualize ? 'bg-white' : ''}`}>
         {activeTab === 'chart' && canVisualize ? (
           <ChartContainer data={result} onClose={() => setActiveTab('table')} />
         ) : (

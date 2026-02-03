@@ -84,6 +84,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # 로깅 설정
     setup_logging(settings)
 
+    # LangSmith 트레이싱 설정
+    import os
+
+    if settings.langsmith_tracing and settings.langsmith_api_key:
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.langsmith_endpoint
+        os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
+        logger.info(f"LangSmith 트레이싱 활성화 - 프로젝트: {settings.langsmith_project}")
+    else:
+        logger.info("LangSmith 트레이싱 비활성화")
+
     logger.info("Text2SQL Agent 서버 시작 중...")
 
     # 데이터베이스 연결 풀 생성

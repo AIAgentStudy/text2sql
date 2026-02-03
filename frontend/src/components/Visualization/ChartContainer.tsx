@@ -114,19 +114,19 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
   // 데이터가 없거나 차트를 그릴 수 없는 경우
   if (rows.length === 0 || columns.length < 2) {
     return (
-      <div className="card p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-content-primary">데이터 시각화</h3>
+          <h3 className="text-lg font-semibold text-gray-900">데이터 시각화</h3>
           <button
             onClick={onClose}
-            className="text-content-tertiary hover:text-content-primary transition-colors"
+            className="text-gray-400 hover:text-gray-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <p className="text-content-secondary text-center py-8">
+        <p className="text-gray-500 text-center py-8">
           시각화할 수 있는 데이터가 충분하지 않습니다.
         </p>
       </div>
@@ -134,13 +134,13 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
   }
 
   return (
-    <div className="card p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-content-primary">데이터 시각화</h3>
+        <h3 className="text-lg font-semibold text-gray-900">데이터 시각화</h3>
         <button
           onClick={onClose}
-          className="text-content-tertiary hover:text-content-primary transition-colors"
+          className="text-gray-400 hover:text-gray-700 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -181,7 +181,7 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
       </div>
 
       {/* 차트 정보 */}
-      <div className="mt-4 text-xs text-content-tertiary">
+      <div className="mt-4 text-xs text-gray-500">
         <p>X축: {chartConfig.xAxis} | Y축: {chartConfig.yAxis.join(', ')}</p>
         <p>데이터 행 수: {rows.length}개</p>
       </div>
