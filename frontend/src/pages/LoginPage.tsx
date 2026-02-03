@@ -43,8 +43,8 @@ export function LoginPage() {
     <div className="min-h-screen bg-gradient-dark flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       {/* 배경 장식 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-600/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-700/20 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent-500/15 rounded-full blur-3xl animate-pulse-slow"></div>
       </div>
 
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md">
@@ -56,7 +56,7 @@ export function LoginPage() {
         </h2>
       </div>
 
-      <div className="relative card py-8 px-4 sm:px-10 max-w-md mx-auto w-full">
+      <div className="relative card py-8 px-4 sm:px-10 max-w-md mx-auto w-full animate-fade-in-up">
         <LoginForm
           onSuccess={handleLoginSuccess}
           onRegisterClick={handleRegisterClick}

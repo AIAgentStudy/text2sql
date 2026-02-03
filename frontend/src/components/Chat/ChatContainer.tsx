@@ -5,17 +5,17 @@
  * useSession과 useChat 훅을 사용하여 상태를 관리합니다.
  */
 
-import { useCallback, useState } from 'react';
-import { MessageList } from './MessageList';
-import { MessageInput } from './MessageInput';
-import { useSession } from '../../hooks/useSession';
-import { useChat } from '../../hooks/useChat';
-import type { LLMProvider } from '../../types';
+import { useCallback, useState } from "react";
+import { MessageList } from "./MessageList";
+import { MessageInput } from "./MessageInput";
+import { useSession } from "../../hooks/useSession";
+import { useChat } from "../../hooks/useChat";
+import type { LLMProvider } from "../../types";
 
 const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'google', label: 'Google' },
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "google", label: "Google" },
 ];
 
 interface ChatContainerProps {
@@ -23,14 +23,12 @@ interface ChatContainerProps {
   llmProvider?: LLMProvider;
 }
 
-export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
-  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(llmProvider);
+export function ChatContainer({ llmProvider = "openai" }: ChatContainerProps) {
+  const [selectedProvider, setSelectedProvider] =
+    useState<LLMProvider>(llmProvider);
+  const [inputMessage, setInputMessage] = useState("");
 
-  const {
-    sessionId,
-    setSessionId,
-    terminateSession,
-  } = useSession({
+  const { sessionId, setSessionId, terminateSession } = useSession({
     autoRestore: true,
     defaultLLMProvider: selectedProvider,
   });
@@ -50,20 +48,15 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
   });
 
   const handleApproveQuery = useCallback(
-    (queryId: string, _modifiedQuery?: string) => {
-      // modifiedQuery 기능은 향후 구현
-      void queryId;
-      confirmQuery(true);
+    (queryId: string) => {
+      confirmQuery(queryId, true);
     },
-    [confirmQuery]
+    [confirmQuery],
   );
 
-  const handleRejectQuery = useCallback(
-    (_queryId: string) => {
-      confirmQuery(false);
-    },
-    [confirmQuery]
-  );
+  const handleExampleSelect = useCallback((example: string) => {
+    setInputMessage(example);
+  }, []);
 
   const handleNewChat = useCallback(async () => {
     clearChat();
@@ -76,15 +69,18 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
       <div className="flex items-center justify-between border-b border-surface-border px-4 py-3 bg-dark-800/50">
         <div className="flex items-center gap-3">
           <div
-            className={`h-2.5 w-2.5 rounded-full ${
-              sessionId
-                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
-                : 'bg-content-muted'
+            className={`status-dot ${
+              sessionId ? "status-dot-connected" : "status-dot-disconnected"
             }`}
           />
-          <span className="text-sm text-white font-medium">
-            {sessionId ? '세션 연결됨' : '세션 대기 중'}
+          <span className="text-sm text-content-primary font-medium">
+            {sessionId ? "세션 연결됨" : "세션 대기 중"}
           </span>
+          {sessionId && (
+            <span className="text-xs text-content-primary font-mono">
+              #{sessionId.slice(-6)}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <select
@@ -101,8 +97,21 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
           </select>
           <button
             onClick={handleNewChat}
-            className="text-sm text-white font-medium hover:text-primary-300 transition-colors duration-200 px-3 py-1.5 rounded-lg hover:bg-surface-hover"
+            className="btn-ghost flex items-center gap-2 text-sm"
           >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
             새 대화
           </button>
         </div>
@@ -113,9 +122,9 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
         <MessageList
           messages={messages}
           onApproveQuery={handleApproveQuery}
-          onRejectQuery={handleRejectQuery}
           isLoading={isLoading}
           currentStatus={currentStatus}
+          onExampleSelect={handleExampleSelect}
         />
       </div>
 
@@ -127,9 +136,11 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
           isLoading={isLoading}
           placeholder={
             awaitingConfirmation
-              ? '쿼리 실행 여부를 먼저 선택해주세요.'
+              ? "쿼리 실행 여부를 먼저 선택해주세요."
               : '자연어로 질문해보세요. 예: "지난달 매출 상위 10개 제품이 뭐야?"'
           }
+          value={inputMessage}
+          onChange={setInputMessage}
         />
       </div>
     </div>

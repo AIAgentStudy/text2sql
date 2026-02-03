@@ -4,83 +4,116 @@
  * 채팅 메시지들을 표시하고 자동 스크롤을 지원합니다.
  */
 
-import { useRef, useEffect, useState } from 'react';
-import type { ChatMessage } from '../../types';
-import { QueryPreview } from './QueryPreview';
-import { ResultTable } from './ResultTable';
-import { ErrorMessage } from '../common/ErrorMessage';
-import { StatusSpinner } from '../common/LoadingSpinner';
+import { useRef, useEffect, useState } from "react";
+import type { ChatMessage } from "../../types";
+import { QueryPreview } from "./QueryPreview";
+import { ResultTable } from "./ResultTable";
+import { ErrorMessage } from "../common/ErrorMessage";
+import { StatusSpinner } from "../common/LoadingSpinner";
 
 interface MessageListProps {
   /** 메시지 목록 */
   messages: ChatMessage[];
   /** 쿼리 승인 핸들러 */
-  onApproveQuery?: (queryId: string, modifiedQuery?: string) => void;
-  /** 쿼리 거부 핸들러 */
-  onRejectQuery?: (queryId: string) => void;
+  onApproveQuery?: (queryId: string) => void;
   /** 로딩 상태 */
   isLoading?: boolean;
   /** 현재 상태 */
   currentStatus?: string | null;
+  /** 예시 질문 선택 핸들러 */
+  onExampleSelect?: (query: string) => void;
 }
 
 export function MessageList({
   messages,
   onApproveQuery,
-  onRejectQuery,
   isLoading = false,
   currentStatus,
+  onExampleSelect,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // 각 메시지별로 결과 표시 여부를 관리
-  const [visibleResults, setVisibleResults] = useState<Record<string, boolean>>({});
+  const [visibleResults, setVisibleResults] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // 새 메시지 시 자동 스크롤
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isLoading]);
 
   const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("ko-KR", {
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   };
 
   const toggleResult = (messageId: string) => {
-    setVisibleResults(prev => ({
+    setVisibleResults((prev) => ({
       ...prev,
-      [messageId]: !prev[messageId]
+      [messageId]: !prev[messageId],
     }));
   };
 
+  const exampleQueries = [
+    "지난달 매출 상위 10개 제품은?",
+    "재고가 부족한 창고 목록을 보여줘",
+    "이번 분기 총 주문 건수는?",
+  ];
+
   if (messages.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center px-4 pt-16">
-        <div className="mb-4 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 p-4 shadow-lg shadow-primary-900/30">
-          <svg
-            className="h-8 w-8 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-            />
-          </svg>
+      <div className="flex h-full flex-col items-center justify-center text-center px-4 pt-16 animate-fade-in">
+        {/* 아이콘 영역 */}
+        <div className="relative mb-6">
+          {/* 배경 글로우 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-accent-500/20 rounded-full blur-2xl scale-150"></div>
+
+          {/* 메인 아이콘 */}
+          <div className="relative rounded-2xl bg-gradient-to-br from-primary-600 to-accent-600 p-5 shadow-glow-mixed animate-float">
+            <svg
+              className="h-10 w-10 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
+              />
+            </svg>
+          </div>
         </div>
-        <h3 className="text-lg font-medium text-content-primary">대화를 시작하세요</h3>
-        <p className="mt-2 max-w-sm text-sm text-content-secondary">
-          자연어로 데이터베이스에 질문해보세요.
-          <br />
-          예: "지난달 매출 상위 10개 제품이 뭐야?"
+
+        <h3 className="text-xl font-bold bg-gradient-to-r from-primary-600 to-accent-500 bg-clip-text text-transparent drop-shadow-md">
+          자연어로 데이터베이스 질의하기
+        </h3>
+        <p className="mt-2 max-w-sm text-sm text-white font-medium">
+          궁금한 것을 자연어로 물어보세요. SQL 쿼리로 변환해 결과를
+          보여드립니다.
         </p>
+
+        {/* 예시 질문 버튼들 */}
+        <div className="mt-8 space-y-2 w-full max-w-md">
+          <p className="text-xs text-gray-100 font-medium mb-3">
+            예시 질문을 클릭해보세요
+          </p>
+          {exampleQueries.map((example, index) => (
+            <button
+              key={index}
+              className="w-full text-left px-4 py-3 rounded-xl bg-white/60 border border-gray-300 text-black text-sm font-medium hover:bg-white/80 hover:border-primary-500/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+              onClick={() => onExampleSelect?.(example)}
+            >
+              "{example}"
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
@@ -93,26 +126,34 @@ export function MessageList({
       {messages.map((message) => (
         <div
           key={message.id}
-          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} ${
+            message.role === "user"
+              ? "animate-slide-in-right"
+              : "animate-slide-in-left"
+          }`}
         >
           <div
             className={`max-w-[85%] px-4 py-3 ${
-              message.role === 'user'
-                ? 'message-user'
-                : 'message-ai'
+              message.role === "user" ? "message-user" : "message-ai pl-6"
             }`}
           >
             {/* 메시지 내용 */}
             {message.isLoading ? (
               <StatusSpinner
                 status={
-                  (currentStatus as 'pending' | 'generating' | 'validating' | 'executing') || 'pending'
+                  (currentStatus as
+                    | "pending"
+                    | "generating"
+                    | "validating"
+                    | "executing") || "pending"
                 }
               />
             ) : (
               <>
                 {message.content && (
-                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                  <p className="whitespace-pre-wrap text-sm">
+                    {message.content}
+                  </p>
                 )}
 
                 {/* 에러 표시 */}
@@ -122,28 +163,26 @@ export function MessageList({
                       code={message.error.code}
                       message={message.error.message}
                       severity={
-                        message.error.code === 'DANGEROUS_QUERY'
-                          ? 'warning'
-                          : message.error.code === 'EMPTY_RESULT'
-                          ? 'info'
-                          : 'error'
+                        message.error.code === "DANGEROUS_QUERY"
+                          ? "warning"
+                          : message.error.code === "EMPTY_RESULT"
+                            ? "info"
+                            : "error"
                       }
                     />
                   </div>
                 )}
 
-                {/* 쿼리 미리보기 - 결과가 없을 때 (실행/취소 버튼 표시) */}
+                {/* 쿼리 미리보기 - 결과가 없을 때 (실행 버튼 표시) */}
                 {message.queryPreview &&
                   !message.queryResult &&
-                  onApproveQuery &&
-                  onRejectQuery && (
+                  onApproveQuery && (
                     <div className="mt-3">
                       <QueryPreview
                         queryId={message.queryPreview.queryId}
                         query={message.queryPreview.query}
                         explanation={message.queryPreview.explanation}
                         onApprove={onApproveQuery}
-                        onReject={onRejectQuery}
                         isLoading={isLoading}
                       />
                     </div>
@@ -154,7 +193,9 @@ export function MessageList({
                   <div className="mt-3">
                     <div className="code-block">
                       <pre className="overflow-x-auto text-xs">
-                        <code className="text-emerald-400">{message.queryPreview.query}</code>
+                        <code className="text-emerald-400">
+                          {message.queryPreview.query}
+                        </code>
                       </pre>
                     </div>
                     <div className="flex justify-end mt-3">
@@ -164,16 +205,41 @@ export function MessageList({
                       >
                         {visibleResults[message.id] ? (
                           <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                              />
                             </svg>
                             결과 숨기기
                           </>
                         ) : (
                           <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
                             </svg>
                             결과 보기
                           </>
@@ -195,7 +261,9 @@ export function MessageList({
             {/* 타임스탬프 */}
             <p
               className={`mt-2 text-xs ${
-                message.role === 'user' ? 'text-primary-200' : 'text-content-tertiary'
+                message.role === "user"
+                  ? "text-primary-200"
+                  : "text-content-tertiary"
               }`}
             >
               {formatTime(message.timestamp)}

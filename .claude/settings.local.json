@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(ls -la \"C:\\\\Users\\\\HI\\\\Desktop\\\\김화연\\\\aiagent\\\\tsagent\\\\frontend\\\\src\\\\containers\"\" 2>&1 || ls -la \"C:UsersHIDesktop김화연aiagenttsagentfrontendsrccomponentsChat\"\")",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone:*)",
+      "Bash(npm run build:*)",
+      "Bash(tasklist:*)"
     ]
   }
 }

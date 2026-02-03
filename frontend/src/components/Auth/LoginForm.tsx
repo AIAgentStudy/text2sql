@@ -74,7 +74,7 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </div>
 
         {error && (
-          <div className="text-red-700 text-sm bg-red-300/70 border border-red-500/20 p-3 rounded-xl">
+          <div className="text-red-300 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
             {error}
           </div>
         )}
@@ -88,37 +88,37 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="mt-6 text-center font-semibold text-sm text-gray-300">
+      <div className="mt-6 text-center font-semibold text-sm text-content-secondary">
         계정이 없으신가요?{" "}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-blue-400 hover:text-blue-800 font-semibold transition-colors"
+          className="text-primary-400 hover:text-primary-300 font-semibold transition-colors"
         >
           회원가입
         </button>
       </div>
 
       {/* 테스트 계정 안내 */}
-      <div className="mt-6 p-4 bg-surface-secondary/50 rounded-xl border border-surface-border bg-gray-100">
-        <p className="text-xs text-black mb-3 text-center font-medium">
+      <div className="mt-6 p-4 bg-surface/50 rounded-xl border border-surface-border backdrop-blur-sm">
+        <p className="text-xs text-content-secondary mb-3 text-center font-medium">
           테스트 계정
         </p>
         <div className="space-y-2 text-xs">
-          <div className="flex justify-between items-center text-black">
+          <div className="flex justify-between items-center">
             <span className="text-amber-400 font-semibold">Admin</span>
-            <span className="font-mono">admin@test.com / admin123</span>
+            <span className="font-mono text-content-tertiary">admin@test.com / admin123</span>
           </div>
-          <div className="flex justify-between items-center text-black">
-            <span className="text-blue-400 font-semibold">Manager</span>
-            <span className="font-mono">manager@test.com / admin123</span>
+          <div className="flex justify-between items-center">
+            <span className="text-accent-400 font-semibold">Manager</span>
+            <span className="font-mono text-content-tertiary">manager@test.com / admin123</span>
           </div>
-          <div className="flex justify-between items-center text-black">
-            <span className="text-green-400 font-semibold">Viewer</span>
-            <span className="font-mono">viewer@test.com / admin123</span>
+          <div className="flex justify-between items-center">
+            <span className="text-success-400 font-semibold">Viewer</span>
+            <span className="font-mono text-content-tertiary">viewer@test.com / admin123</span>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-3 text-center">
+        <p className="text-xs text-content-muted mt-3 text-center">
           역할별로 조회 가능한 테이블이 다릅니다
         </p>
       </div>

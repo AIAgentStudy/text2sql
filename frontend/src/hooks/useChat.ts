@@ -46,7 +46,7 @@ export interface UseChatReturn {
   /** 메시지 전송 */
   sendMessage: (message: string) => Promise<void>;
   /** 쿼리 확인 (승인/거부) */
-  confirmQuery: (approved: boolean) => Promise<void>;
+  confirmQuery: (queryId: string, approved: boolean) => Promise<void>;
   /** 요청 취소 */
   cancelRequest: () => void;
   /** 채팅 초기화 */
@@ -292,8 +292,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
    * 쿼리 확인 (승인/거부)
    */
   const confirmQuery = useCallback(
-    async (approved: boolean): Promise<void> => {
-      const queryId = state.pendingQueryId;
+    async (queryId: string, approved: boolean): Promise<void> => {
       const currentSessionId = currentSessionIdRef.current;
 
       if (!queryId || !currentSessionId) {
@@ -375,7 +374,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         }));
       }
     },
-    [state.pendingQueryId, state.messages, updateMessage, addMessage]
+    [state.messages, updateMessage, addMessage]
   );
 
   /**

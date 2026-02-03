@@ -104,11 +104,16 @@ async def chat_endpoint(
             # 그래프 실행 및 스트리밍
             final_state = None
             is_interrupted = False
+            current_query_id = ""  # query_id 추적용
 
             async for event in graph.astream(initial_state, config):
                 # 노드별 이벤트 처리
                 for node_name, node_output in event.items():
                     final_state = node_output
+
+                    # query_id 추적 (어느 노드에서든 설정되면 저장)
+                    if node_output.get("query_id"):
+                        current_query_id = node_output.get("query_id")
 
                     # 쿼리 생성 완료 시
                     if node_name == "query_generation" and node_output.get("generated_query"):
@@ -140,7 +145,7 @@ async def chat_endpoint(
                             is_interrupted = True
                             yield _format_sse_event(
                                 ConfirmationRequiredEvent(
-                                    query_id=node_output.get("query_id", ""),
+                                    query_id=current_query_id,  # 추적한 query_id 사용
                                     query=node_output.get("generated_query", ""),
                                     explanation=node_output.get("query_explanation", ""),
                                 )
