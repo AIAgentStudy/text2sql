@@ -17,6 +17,10 @@ interface MessageInputProps {
   placeholder?: string;
   /** 자동 포커스 */
   autoFocus?: boolean;
+  /** 외부에서 제어되는 값 (controlled mode) */
+  value?: string;
+  /** 외부 값 변경 핸들러 (controlled mode) */
+  onChange?: (value: string) => void;
 }
 
 export function MessageInput({
@@ -25,9 +29,15 @@ export function MessageInput({
   isLoading = false,
   placeholder = '자연어로 질문해보세요. 예: "지난달 매출 상위 10개 제품이 뭐야?"',
   autoFocus = true,
+  value,
+  onChange,
 }: MessageInputProps) {
-  const [message, setMessage] = useState("");
+  const [internalMessage, setInternalMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // controlled/uncontrolled 모드 지원
+  const message = value ?? internalMessage;
+  const handleMessageChange = onChange ?? setInternalMessage;
 
   // 자동 포커스
   useEffect(() => {
@@ -48,7 +58,7 @@ export function MessageInput({
     e.preventDefault();
     if (message.trim() && !disabled && !isLoading) {
       onSend(message.trim());
-      setMessage("");
+      handleMessageChange("");
       // 높이 초기화
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -73,12 +83,12 @@ export function MessageInput({
         <textarea
           ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => handleMessageChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isDisabled}
           rows={1}
-          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-black placeholder-gray-400 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-[40px] flex-1 resize-none border-0 bg-transparent p-2 text-sm text-black placeholder-content-tertiary focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="메시지 입력"
         />
         <button
@@ -120,7 +130,7 @@ export function MessageInput({
           )}
         </button>
       </div>
-      <p className="mt-2 text-xs text-gray-400">
+      <p className="mt-2 text-xs text-content-muted">
         Enter로 전송, Shift+Enter로 줄바꿈
       </p>
     </form>

@@ -20,7 +20,9 @@ export function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-dark flex flex-col">
       {/* 헤더 */}
-      <header className="glass border-b border-surface-border">
+      <header className="glass border-b border-surface-border relative">
+        {/* 하단 그라디언트 라인 */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-500/50 to-transparent"></div>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gradient">Text2SQL Agent</h1>
@@ -55,7 +57,9 @@ export function ChatPage() {
       </main>
 
       {/* 푸터 */}
-      <footer className="glass border-t border-surface-border py-3">
+      <footer className="glass border-t border-surface-border py-3 relative">
+        {/* 상단 그라디언트 라인 */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-500/30 to-transparent"></div>
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-content-secondary">
           <p>
             자연어 질문을 입력하면 SQL 쿼리를 생성하고 실행합니다.

@@ -49,19 +49,42 @@ body {
     @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium;
     @apply rounded-xl px-6 py-2.5;
     @apply shadow-lg shadow-primary-900/30;
-    @apply hover:from-primary-500 hover:to-primary-600;
+    @apply hover:from-primary-500 hover:to-primary-600 hover:-translate-y-0.5 hover:shadow-glow;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-dark-800;
+    @apply active:translate-y-0 active:shadow-md;
     @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-primary-600 disabled:hover:to-primary-700;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-primary-600 disabled:hover:to-primary-700 disabled:hover:translate-y-0 disabled:hover:shadow-lg;
   }
 
   .btn-secondary {
     @apply bg-surface/50 border border-surface-border text-content-secondary font-medium;
     @apply rounded-xl px-6 py-2.5;
-    @apply hover:bg-surface-hover hover:text-content-primary;
+    @apply hover:bg-surface-hover hover:text-content-primary hover:-translate-y-0.5;
     @apply focus:outline-none focus:ring-2 focus:ring-surface-border focus:ring-offset-2 focus:ring-offset-dark-800;
+    @apply active:translate-y-0;
     @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+
+  /* 액센트 버튼 */
+  .btn-accent {
+    @apply bg-gradient-to-r from-accent-500 to-accent-600 text-white font-medium;
+    @apply rounded-xl px-6 py-2.5;
+    @apply shadow-lg shadow-accent-700/30;
+    @apply hover:from-accent-400 hover:to-accent-500 hover:-translate-y-0.5 hover:shadow-glow-accent;
+    @apply focus:outline-none focus:ring-2 focus:ring-accent-500/50 focus:ring-offset-2 focus:ring-offset-dark-800;
+    @apply active:translate-y-0 active:shadow-md;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+
+  /* 고스트 버튼 */
+  .btn-ghost {
+    @apply bg-transparent text-content-secondary font-medium;
+    @apply rounded-xl px-4 py-2;
+    @apply hover:bg-surface-hover hover:text-content-primary;
+    @apply focus:outline-none focus:ring-2 focus:ring-surface-border;
+    @apply transition-all duration-200;
   }
 
   /* 카드 스타일 */
@@ -75,12 +98,13 @@ body {
 
   /* 입력 필드 스타일 */
   .input-dark {
-    @apply bg-white border border-gray-300 text-gray-900;
-    @apply placeholder-gray-400;
+    @apply bg-dark-700/50 border border-surface-border text-content-primary;
+    @apply placeholder-content-tertiary;
     @apply rounded-xl px-4 py-3;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50;
+    @apply focus:bg-dark-700;
     @apply transition-all duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-dark-800/50;
   }
 
   /* 메시지 버블 */
@@ -91,8 +115,21 @@ body {
   }
 
   .message-ai {
-    @apply bg-dark-700 border border-surface-border text-content-primary;
+    @apply bg-dark-700/80 backdrop-blur-sm border border-surface-border text-content-primary;
     @apply rounded-2xl rounded-bl-md;
+    @apply relative;
+  }
+
+  .message-ai::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #06b6d4, #7c3aed);
+    opacity: 0.6;
   }
 
   /* 코드 블록 */
@@ -108,15 +145,15 @@ body {
 
   /* 선택 박스 (셀렉트) */
   .select-dark {
-    @apply bg-white border border-gray-300 text-gray-900;
+    @apply bg-dark-700/50 border border-surface-border text-content-primary;
     @apply rounded-xl px-4 py-3;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50;
     @apply transition-all duration-200;
     @apply cursor-pointer;
   }
 
   .select-dark option {
-    @apply bg-white text-gray-900;
+    @apply bg-dark-800 text-content-primary;
   }
 
   /* 스크롤바 커스텀 */
@@ -148,6 +185,10 @@ body {
     @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
   }
 
+  .text-gradient-mixed {
+    @apply bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent;
+  }
+
   /* Glow 효과 */
   .glow {
     @apply shadow-glow;
@@ -155,6 +196,26 @@ body {
 
   .glow-sm {
     @apply shadow-glow-sm;
+  }
+
+  /* 상태 표시 점 */
+  .status-dot {
+    @apply h-2.5 w-2.5 rounded-full transition-all duration-300;
+  }
+
+  .status-dot-connected {
+    @apply bg-success-500;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    animation: pulseSubtle 2s ease-in-out infinite;
+  }
+
+  .status-dot-disconnected {
+    @apply bg-content-muted;
+  }
+
+  @keyframes pulseSubtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   /* 테이블 스타일 */
@@ -202,5 +263,16 @@ body {
     100% {
       background-position: 0% 50%;
     }
+  }
+}
+
+/* 접근성: 감소된 모션 설정 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
