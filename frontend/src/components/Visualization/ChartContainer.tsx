@@ -33,6 +33,13 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
 
     columns.forEach((col) => {
       const dataType = col.data_type.toLowerCase();
+      if (dataType === 'unknown') {
+        const sampleValues = rows.slice(0, 5).map(r => r[col.name]).filter(v => v != null);
+        const isNumeric = sampleValues.length > 0 && sampleValues.every(v => typeof v === 'number');
+        if (isNumeric) numeric.push(col.name);
+        else category.push(col.name);
+        return;
+      }
       if (
         ['integer', 'bigint', 'smallint', 'decimal', 'numeric', 'real', 'double precision', 'float'].some(
           (t) => dataType.includes(t)
@@ -45,7 +52,7 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
     });
 
     return { numericColumns: numeric, categoryColumns: category };
-  }, [columns]);
+  }, [columns, rows]);
 
   // 추천 차트 유형 결정
   const recommendedChartType = useMemo((): ChartType => {

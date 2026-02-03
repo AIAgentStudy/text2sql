@@ -224,24 +224,24 @@ body {
   }
 
   .table-dark thead {
-    @apply bg-surface/50;
+    @apply bg-gray-100;
   }
 
   .table-dark th {
-    @apply px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-content-secondary;
-    @apply border-b border-surface-border;
+    @apply px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-900;
+    @apply border-b border-gray-200;
   }
 
   .table-dark tbody {
-    @apply divide-y divide-surface-border;
+    @apply divide-y divide-gray-200;
   }
 
   .table-dark tbody tr {
-    @apply hover:bg-surface-hover transition-colors;
+    @apply bg-white hover:bg-gray-50 transition-colors;
   }
 
   .table-dark td {
-    @apply px-4 py-3 text-sm text-content-primary;
+    @apply px-4 py-3 text-sm text-gray-900;
   }
 }
 

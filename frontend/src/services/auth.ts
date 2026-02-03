@@ -39,14 +39,12 @@ export interface AuthError {
 }
 
 const TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 
 /**
- * 토큰 저장
+ * 토큰 저장 (access_token만 localStorage에 저장, refresh_token은 HttpOnly 쿠키로 관리)
  */
 export function saveTokens(tokens: TokenResponse): void {
   localStorage.setItem(TOKEN_KEY, tokens.access_token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
 }
 
 /**
@@ -54,7 +52,6 @@ export function saveTokens(tokens: TokenResponse): void {
  */
 export function clearTokens(): void {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 /**
@@ -62,13 +59,6 @@ export function clearTokens(): void {
  */
 export function getAccessToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
-}
-
-/**
- * Refresh Token 가져오기
- */
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 /**
@@ -149,22 +139,16 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * 토큰 갱신
+ * 토큰 갱신 (HttpOnly 쿠키의 refresh_token을 자동 전송)
  */
 export async function refreshToken(): Promise<TokenResponse | null> {
-  const refresh = getRefreshToken();
-
-  if (!refresh) {
-    return null;
-  }
-
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refresh_token: refresh }),
+      body: JSON.stringify({}),
       credentials: 'include',
     });
 

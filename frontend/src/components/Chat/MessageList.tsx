@@ -4,10 +4,9 @@
  * 채팅 메시지들을 표시하고 자동 스크롤을 지원합니다.
  */
 
-import { useRef, useEffect, useState } from "react";
-import type { ChatMessage } from "../../types";
+import { useRef, useEffect } from "react";
+import type { ChatMessage, QueryResultData } from "../../types";
 import { QueryPreview } from "./QueryPreview";
-import { ResultTable } from "./ResultTable";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { StatusSpinner } from "../common/LoadingSpinner";
 
@@ -22,6 +21,8 @@ interface MessageListProps {
   currentStatus?: string | null;
   /** 예시 질문 선택 핸들러 */
   onExampleSelect?: (query: string) => void;
+  /** 결과 선택 콜백 (우측 패널에 표시) */
+  onSelectResult?: (result: QueryResultData, query: string) => void;
 }
 
 export function MessageList({
@@ -30,13 +31,10 @@ export function MessageList({
   isLoading = false,
   currentStatus,
   onExampleSelect,
+  onSelectResult,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  // 각 메시지별로 결과 표시 여부를 관리
-  const [visibleResults, setVisibleResults] = useState<Record<string, boolean>>(
-    {},
-  );
 
   // 새 메시지 시 자동 스크롤
   useEffect(() => {
@@ -45,18 +43,20 @@ export function MessageList({
     }
   }, [messages, isLoading]);
 
+  // 새 결과가 도착하면 자동으로 우측 패널에 표시
+  useEffect(() => {
+    if (!onSelectResult) return;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.queryResult && lastMessage?.queryPreview?.query) {
+      onSelectResult(lastMessage.queryResult, lastMessage.queryPreview.query);
+    }
+  }, [messages, onSelectResult]);
+
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat("ko-KR", {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
-  };
-
-  const toggleResult = (messageId: string) => {
-    setVisibleResults((prev) => ({
-      ...prev,
-      [messageId]: !prev[messageId],
-    }));
   };
 
   const exampleQueries = [
@@ -121,7 +121,7 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-dark"
+      className="h-full space-y-4 overflow-y-auto p-4 scrollbar-dark"
     >
       {messages.map((message) => (
         <div
@@ -198,61 +198,41 @@ export function MessageList({
                         </code>
                       </pre>
                     </div>
-                    <div className="flex justify-end mt-3">
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-content-tertiary">
+                        {message.queryResult.returned_row_count}개 행 반환
+                      </span>
                       <button
-                        onClick={() => toggleResult(message.id)}
-                        className="btn-primary flex items-center gap-2"
+                        onClick={() =>
+                          onSelectResult?.(
+                            message.queryResult!,
+                            message.queryPreview!.query,
+                          )
+                        }
+                        className="btn-primary flex items-center gap-2 text-sm"
                       >
-                        {visibleResults[message.id] ? (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                              />
-                            </svg>
-                            결과 숨기기
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            결과 보기
-                          </>
-                        )}
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        결과 보기
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {/* 쿼리 결과 (실행 버튼을 누른 후에만 표시) */}
-                {message.queryResult && visibleResults[message.id] && (
-                  <div className="mt-3">
-                    <ResultTable data={message.queryResult} />
                   </div>
                 )}
               </>

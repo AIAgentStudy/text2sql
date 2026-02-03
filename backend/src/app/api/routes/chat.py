@@ -17,7 +17,7 @@ from app.agent.state import create_initial_state
 from app.auth.dependencies import get_current_user
 from app.auth.permissions import get_accessible_tables
 from app.models.auth import UserWithRoles
-from app.models.entities import QueryRequestStatus
+from app.models.entities import ColumnInfo, QueryRequestStatus
 from app.models.requests import ChatRequest, ConfirmationRequest
 from app.models.responses import (
     ConfirmationResponse,
@@ -72,9 +72,7 @@ async def chat_endpoint(
             session_id = session.session_id
 
             # 세션 이벤트 전송
-            yield _format_sse_event(
-                SessionEvent(session_id=session_id)
-            )
+            yield _format_sse_event(SessionEvent(session_id=session_id))
 
             # 상태 이벤트: 생성 중
             yield _format_sse_event(
@@ -116,9 +114,7 @@ async def chat_endpoint(
                         is_interrupted = True
                         # interrupt 값에서 확인 요청 정보 추출
                         if isinstance(node_output, tuple) and len(node_output) > 0:
-                            interrupt_value = getattr(
-                                node_output[0], "value", None
-                            )
+                            interrupt_value = getattr(node_output[0], "value", None)
                             if isinstance(interrupt_value, dict):
                                 yield _format_sse_event(
                                     ConfirmationRequiredEvent(
@@ -156,9 +152,7 @@ async def chat_endpoint(
                         yield _format_sse_event(
                             QueryPreviewEvent(
                                 query=node_output.get("generated_query", ""),
-                                explanation=node_output.get(
-                                    "query_explanation", ""
-                                ),
+                                explanation=node_output.get("query_explanation", ""),
                             )
                         )
 
@@ -204,15 +198,22 @@ async def chat_endpoint(
                     rows = final_state.get("query_result", [])
                     columns = final_state.get("result_columns", [])
 
+                    column_infos = [
+                        ColumnInfo(name=col, data_type="unknown", is_nullable=True)
+                        for col in columns
+                    ]
                     yield _format_sse_event(
                         ResultEvent(
                             data=QueryResultData(
                                 rows=rows,
                                 total_row_count=final_state.get("total_row_count", 0),
                                 returned_row_count=len(rows),
-                                columns=[],  # 단순화
-                                is_truncated=len(rows) < final_state.get("total_row_count", 0),
-                                execution_time_ms=final_state.get("execution_time_ms", 0),
+                                columns=column_infos,
+                                is_truncated=len(rows)
+                                < final_state.get("total_row_count", 0),
+                                execution_time_ms=final_state.get(
+                                    "execution_time_ms", 0
+                                ),
                             )
                         )
                     )
@@ -290,7 +291,6 @@ async def confirm_query(
         # 사용자 응답 구성
         user_response = {
             "approved": request.approved,
-            "modified_query": request.modified_query,
         }
 
         if not request.approved:
@@ -316,10 +316,6 @@ async def confirm_query(
         # 승인 시 Command(resume)로 워크플로우 재개
         logger.info(f"사용자가 쿼리 실행을 승인함: {query_id}")
 
-        # 수정된 쿼리가 있는 경우
-        if request.modified_query:
-            logger.info(f"수정된 쿼리로 실행: {request.modified_query[:50]}...")
-
         # Command로 워크플로우 재개
         final_state = {}
         async for event in graph.astream(
@@ -342,13 +338,18 @@ async def confirm_query(
                     ),
                 )
 
+            result_columns = final_state.get("result_columns", [])
+            column_infos = [
+                ColumnInfo(name=col, data_type="unknown", is_nullable=True)
+                for col in result_columns
+            ]
             return ConfirmationResponse(
                 success=True,
                 result=QueryResultData(
                     rows=final_state.get("query_result", []),
                     total_row_count=final_state.get("total_row_count", 0),
                     returned_row_count=len(final_state.get("query_result", [])),
-                    columns=[],
+                    columns=column_infos,
                     is_truncated=False,
                     execution_time_ms=final_state.get("execution_time_ms", 0),
                 ),

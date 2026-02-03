@@ -7,7 +7,6 @@
 
 import { useState, useMemo } from 'react';
 import type { QueryResultData, ColumnInfo } from '../../types';
-import { ChartContainer } from '../Visualization/ChartContainer';
 
 interface ResultTableProps {
   /** 쿼리 결과 데이터 */
@@ -26,7 +25,6 @@ export function ResultTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [showVisualization, setShowVisualization] = useState(false);
 
   const { rows, columns, total_row_count, returned_row_count, is_truncated, execution_time_ms } = data;
 
@@ -104,38 +102,15 @@ export function ResultTable({
 
   return (
     <div className="space-y-4">
-      {/* 시각화 */}
-      {showVisualization && (
-        <ChartContainer
-          data={data}
-          onClose={() => setShowVisualization(false)}
-        />
-      )}
-
       {/* 결과 요약 */}
       <div className="flex items-center justify-between text-sm text-content-secondary">
         <span>
           총 {total_row_count.toLocaleString()}개 중 {returned_row_count.toLocaleString()}개 표시
           {is_truncated && <span className="ml-2 text-amber-400">(결과가 잘렸습니다)</span>}
         </span>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowVisualization(!showVisualization)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-              showVisualization
-                ? 'bg-primary-600/20 text-primary-400 border border-primary-500/30'
-                : 'glass text-content-secondary hover:text-content-primary hover:bg-surface-hover'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            시각화
-          </button>
-          <span className="text-content-tertiary">
-            실행 시간: {execution_time_ms.toFixed(0)}ms
-          </span>
-        </div>
+        <span className="text-content-tertiary">
+          실행 시간: {execution_time_ms.toFixed(0)}ms
+        </span>
       </div>
 
       {/* 테이블 */}
@@ -168,9 +143,11 @@ export function ResultTable({
                       </svg>
                     )}
                   </div>
-                  <span className="text-xs font-normal normal-case text-content-tertiary">
-                    {column.data_type}
-                  </span>
+                  {column.data_type !== 'unknown' && (
+                    <span className="text-xs font-normal normal-case text-gray-500">
+                      {column.data_type}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>

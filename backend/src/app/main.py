@@ -4,6 +4,10 @@ FastAPI 애플리케이션 엔트리포인트
 Text2SQL Agent API 서버의 메인 진입점입니다.
 """
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import logging
 import time
 import uuid
