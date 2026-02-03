@@ -1,11 +1,9 @@
 /**
  * 쿼리 미리보기 컴포넌트
  *
- * 생성된 SQL 쿼리를 표시하고 사용자가 실행/취소할 수 있는 UI를 제공합니다.
+ * 생성된 SQL 쿼리를 표시하고 사용자가 실행할 수 있는 UI를 제공합니다.
  * Human-in-the-Loop 패턴을 지원합니다.
  */
-
-import { useState } from 'react';
 
 interface QueryPreviewProps {
   /** 쿼리 ID */
@@ -15,13 +13,9 @@ interface QueryPreviewProps {
   /** 쿼리에 대한 한국어 설명 */
   explanation: string;
   /** 실행 버튼 클릭 핸들러 */
-  onApprove: (queryId: string, modifiedQuery?: string) => void;
-  /** 취소 버튼 클릭 핸들러 */
-  onReject: (queryId: string) => void;
+  onApprove: (queryId: string) => void;
   /** 로딩 상태 */
   isLoading?: boolean;
-  /** 수정 가능 여부 */
-  allowEdit?: boolean;
 }
 
 export function QueryPreview({
@@ -29,85 +23,36 @@ export function QueryPreview({
   query,
   explanation,
   onApprove,
-  onReject,
   isLoading = false,
-  allowEdit = true,
 }: QueryPreviewProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [modifiedQuery, setModifiedQuery] = useState(query);
-
   const handleApprove = () => {
-    const queryToSubmit = isEditing && modifiedQuery !== query ? modifiedQuery : undefined;
-    onApprove(queryId, queryToSubmit);
-  };
-
-  const handleReject = () => {
-    onReject(queryId);
-  };
-
-  const handleEditToggle = () => {
-    if (!allowEdit) return;
-    setIsEditing(!isEditing);
-    if (!isEditing) {
-      setModifiedQuery(query);
-    }
+    onApprove(queryId);
   };
 
   return (
     <div className="query-preview card p-4">
       {/* 쿼리 설명 */}
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-content-primary">쿼리 미리보기</h3>
+        <h3 className="text-lg font-medium text-content-primary">
+          생성된 쿼리문
+        </h3>
         <p className="mt-1 text-sm text-content-secondary">{explanation}</p>
       </div>
 
       {/* SQL 쿼리 */}
       <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-content-secondary">SQL 쿼리</span>
-          {allowEdit && (
-            <button
-              onClick={handleEditToggle}
-              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
-              disabled={isLoading}
-            >
-              {isEditing ? '편집 취소' : '쿼리 수정'}
-            </button>
-          )}
+        <span className="text-sm font-medium text-content-secondary">
+          SQL 쿼리
+        </span>
+        <div className="code-block mt-2">
+          <pre className="overflow-x-auto text-sm">
+            <code className="text-emerald-400">{query}</code>
+          </pre>
         </div>
-
-        {isEditing ? (
-          <textarea
-            value={modifiedQuery}
-            onChange={(e) => setModifiedQuery(e.target.value)}
-            className="mt-2 w-full input-dark font-mono text-sm"
-            rows={6}
-            disabled={isLoading}
-          />
-        ) : (
-          <div className="code-block mt-2">
-            <pre className="overflow-x-auto text-sm">
-              <code className="text-emerald-400">{query}</code>
-            </pre>
-          </div>
-        )}
-
-        {isEditing && modifiedQuery !== query && (
-          <p className="mt-1 text-xs text-amber-400">
-            * 쿼리가 수정되었습니다. 수정된 쿼리는 다시 검증됩니다.
-          </p>
-        )}
       </div>
 
       {/* 액션 버튼 */}
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={handleReject}
-          disabled={isLoading}
-          className="btn-secondary"
-        >
-          취소
-        </button>
+      <div className="flex justify-end">
         <button
           onClick={handleApprove}
           disabled={isLoading}
@@ -138,7 +83,7 @@ export function QueryPreview({
               실행 중...
             </span>
           ) : (
-            '실행'
+            "실행"
           )}
         </button>
       </div>

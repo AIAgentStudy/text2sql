@@ -50,17 +50,8 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
   });
 
   const handleApproveQuery = useCallback(
-    (queryId: string, _modifiedQuery?: string) => {
-      // modifiedQuery 기능은 향후 구현
-      void queryId;
-      confirmQuery(true);
-    },
-    [confirmQuery]
-  );
-
-  const handleRejectQuery = useCallback(
-    (_queryId: string) => {
-      confirmQuery(false);
+    (queryId: string) => {
+      confirmQuery(queryId, true);
     },
     [confirmQuery]
   );
@@ -113,7 +104,6 @@ export function ChatContainer({ llmProvider = 'openai' }: ChatContainerProps) {
         <MessageList
           messages={messages}
           onApproveQuery={handleApproveQuery}
-          onRejectQuery={handleRejectQuery}
           isLoading={isLoading}
           currentStatus={currentStatus}
         />
