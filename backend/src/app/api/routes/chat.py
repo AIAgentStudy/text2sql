@@ -106,9 +106,37 @@ async def chat_endpoint(
             is_interrupted = False
             current_query_id = ""  # query_id 추적용
 
-            async for event in graph.astream(initial_state, config):
+            async for event in graph.astream(
+                initial_state, config, stream_mode="updates"
+            ):
                 # 노드별 이벤트 처리
                 for node_name, node_output in event.items():
+                    # __interrupt__ 이벤트 처리 (Human-in-the-Loop)
+                    if node_name == "__interrupt__":
+                        is_interrupted = True
+                        # interrupt 값에서 확인 요청 정보 추출
+                        if isinstance(node_output, tuple) and len(node_output) > 0:
+                            interrupt_value = getattr(
+                                node_output[0], "value", None
+                            )
+                            if isinstance(interrupt_value, dict):
+                                yield _format_sse_event(
+                                    ConfirmationRequiredEvent(
+                                        query_id=interrupt_value.get(
+                                            "query_id", current_query_id
+                                        ),
+                                        query=interrupt_value.get("query", ""),
+                                        explanation=interrupt_value.get(
+                                            "explanation", ""
+                                        ),
+                                    )
+                                )
+                        continue
+
+                    # dict가 아닌 이벤트 건너뛰기
+                    if not isinstance(node_output, dict):
+                        continue
+
                     final_state = node_output
 
                     # query_id 추적 (어느 노드에서든 설정되면 저장)
@@ -116,7 +144,9 @@ async def chat_endpoint(
                         current_query_id = node_output.get("query_id")
 
                     # 쿼리 생성 완료 시
-                    if node_name == "query_generation" and node_output.get("generated_query"):
+                    if node_name == "query_generation" and node_output.get(
+                        "generated_query"
+                    ):
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.VALIDATING,
@@ -126,30 +156,22 @@ async def chat_endpoint(
                         yield _format_sse_event(
                             QueryPreviewEvent(
                                 query=node_output.get("generated_query", ""),
-                                explanation=node_output.get("query_explanation", ""),
+                                explanation=node_output.get(
+                                    "query_explanation", ""
+                                ),
                             )
                         )
 
                     # 검증 완료 시
-                    if node_name == "query_validation" and node_output.get("is_query_valid"):
+                    if node_name == "query_validation" and node_output.get(
+                        "is_query_valid"
+                    ):
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.AWAITING_CONFIRM,
                                 message="쿼리 확인을 기다리고 있습니다...",
                             )
                         )
-
-                    # 사용자 확인 대기 중 (interrupt 발생)
-                    if node_name == "user_confirmation":
-                        if node_output.get("user_approved") is None:
-                            is_interrupted = True
-                            yield _format_sse_event(
-                                ConfirmationRequiredEvent(
-                                    query_id=current_query_id,  # 추적한 query_id 사용
-                                    query=node_output.get("generated_query", ""),
-                                    explanation=node_output.get("query_explanation", ""),
-                                )
-                            )
 
                     # 쿼리 실행 중
                     if node_name == "query_execution":
@@ -276,13 +298,14 @@ async def confirm_query(
             logger.info(f"사용자가 쿼리 실행을 거부함: {query_id}")
 
             # Command로 워크플로우 재개 (거부 상태)
-            final_state = None
+            final_state = {}
             async for event in graph.astream(
-                Command(resume=user_response),
-                config,
+                Command(resume=user_response), config, stream_mode="updates"
             ):
                 for node_name, node_output in event.items():
-                    final_state = node_output
+                    if not isinstance(node_output, dict):
+                        continue
+                    final_state.update(node_output)
 
             return ConfirmationResponse(
                 success=True,
@@ -298,13 +321,14 @@ async def confirm_query(
             logger.info(f"수정된 쿼리로 실행: {request.modified_query[:50]}...")
 
         # Command로 워크플로우 재개
-        final_state = None
+        final_state = {}
         async for event in graph.astream(
-            Command(resume=user_response),
-            config,
+            Command(resume=user_response), config, stream_mode="updates"
         ):
             for node_name, node_output in event.items():
-                final_state = node_output
+                if not isinstance(node_output, dict):
+                    continue
+                final_state.update(node_output)
 
         # 결과 반환
         if final_state:

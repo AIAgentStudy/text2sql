@@ -20,7 +20,6 @@ from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
 from app.agent.nodes.user_confirmation import user_confirmation_node
 from app.agent.state import Text2SQLAgentState
-from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -191,22 +190,12 @@ def compile_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
     """
     graph = build_graph()
 
-    # interrupt_before 설정 (Human-in-the-Loop)
-    # auto_confirm_queries가 False일 때만 interrupt 활성화
-    settings = get_settings()
-    interrupt_nodes = []
-    if not settings.auto_confirm_queries:
-        interrupt_nodes = ["user_confirmation"]
-
+    # user_confirmation_node 내부에서 interrupt()를 직접 호출하므로
+    # interrupt_before는 사용하지 않음 (이중 interrupt 방지)
     if checkpointer:
-        compiled = graph.compile(
-            checkpointer=checkpointer,
-            interrupt_before=interrupt_nodes if interrupt_nodes else None,
-        )
+        compiled = graph.compile(checkpointer=checkpointer)
     else:
-        compiled = graph.compile(
-            interrupt_before=interrupt_nodes if interrupt_nodes else None,
-        )
+        compiled = graph.compile()
 
     logger.info("Text2SQL 에이전트 그래프 컴파일 완료")
     return compiled
