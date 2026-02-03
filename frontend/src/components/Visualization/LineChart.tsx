@@ -31,36 +31,36 @@ export function LineChartComponent({ data, xAxisKey, yAxisKeys }: LineChartProps
         data={data}
         margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 0, 0, 0.1)" />
         <XAxis
           dataKey={xAxisKey}
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
+          tick={{ fontSize: 12, fill: '#374151' }}
           angle={-45}
           textAnchor="end"
           height={60}
           interval={0}
-          stroke="rgba(255, 255, 255, 0.1)"
+          stroke="rgba(0, 0, 0, 0.15)"
         />
         <YAxis
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
+          tick={{ fontSize: 12, fill: '#374151' }}
           tickFormatter={(value) =>
             typeof value === 'number' ? value.toLocaleString() : value
           }
-          stroke="rgba(255, 255, 255, 0.1)"
+          stroke="rgba(0, 0, 0, 0.15)"
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: 'rgba(26, 26, 46, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
             borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            color: '#f8fafc',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+            color: '#111827',
           }}
-          labelStyle={{ color: '#94a3b8' }}
+          labelStyle={{ color: '#374151' }}
           formatter={(value: number) => [value.toLocaleString(), '']}
         />
         <Legend
-          wrapperStyle={{ paddingTop: '10px', color: '#94a3b8' }}
+          wrapperStyle={{ paddingTop: '10px', color: '#374151' }}
         />
         {yAxisKeys.map((key, index) => (
           <Line

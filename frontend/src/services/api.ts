@@ -46,6 +46,7 @@ async function fetchApi<T>(
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeader(),
@@ -125,8 +126,9 @@ export async function streamChat(
   const url = `${API_BASE_URL}/api/chat`;
 
   try {
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
@@ -136,14 +138,29 @@ export async function streamChat(
       signal,
     });
 
-    if (!response.ok) {
-      // 401 에러 시 로그인 페이지로 리다이렉트
-      if (response.status === 401) {
+    // 401 에러 시 토큰 갱신 후 재시도
+    if (response.status === 401) {
+      const newTokens = await refreshToken();
+      if (newTokens) {
+        response = await fetch(url, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify(request),
+          signal,
+        });
+      } else {
         clearTokens();
         window.location.href = '/login';
         throw new ApiError('UNAUTHORIZED', '인증이 만료되었습니다.', 401);
       }
+    }
 
+    if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
         errorData.error?.code || errorData.detail || 'STREAM_ERROR',

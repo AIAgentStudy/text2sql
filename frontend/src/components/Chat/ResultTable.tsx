@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from 'react';
 import type { QueryResultData, ColumnInfo } from '../../types';
-import { ChartContainer } from '../Visualization/ChartContainer';
+import { isNumericValue, toNumber } from '../../utils/typeChecks';
 
 interface ResultTableProps {
   /** 쿼리 결과 데이터 */
@@ -26,13 +26,41 @@ export function ResultTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [showVisualization, setShowVisualization] = useState(false);
 
   const { rows, columns, total_row_count, returned_row_count, is_truncated, execution_time_ms } = data;
+
+  const getColumnType = (column: ColumnInfo): 'text' | 'number' | 'date' => {
+    const dataType = column.data_type.toLowerCase();
+    if (['integer', 'bigint', 'smallint', 'decimal', 'numeric', 'real', 'double precision', 'float'].some(t => dataType.includes(t))) {
+      return 'number';
+    }
+    if (['date', 'timestamp', 'time'].some(t => dataType.includes(t))) {
+      return 'date';
+    }
+    return 'text';
+  };
+
+  // 컬럼이 숫자형인지 판별 (메타데이터 + 샘플 값 기반)
+  const isColumnNumeric = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    for (const col of columns) {
+      const colType = getColumnType(col);
+      if (colType === 'number') {
+        map[col.name] = true;
+      } else {
+        // data_type이 unknown이면 샘플 값으로 판별
+        const sampleValues = rows.slice(0, 10).map(r => r[col.name]).filter(v => v != null);
+        map[col.name] = sampleValues.length > 0 && sampleValues.every(v => isNumericValue(v));
+      }
+    }
+    return map;
+  }, [columns, rows]);
 
   // 정렬된 행
   const sortedRows = useMemo(() => {
     if (!sortColumn) return rows;
+
+    const numeric = isColumnNumeric[sortColumn] ?? false;
 
     return [...rows].sort((a, b) => {
       const aVal = a[sortColumn];
@@ -41,8 +69,12 @@ export function ResultTable({
       if (aVal === null || aVal === undefined) return sortDirection === 'asc' ? 1 : -1;
       if (bVal === null || bVal === undefined) return sortDirection === 'asc' ? -1 : 1;
 
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      if (numeric) {
+        const aNum = toNumber(aVal);
+        const bNum = toNumber(bVal);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+        }
       }
 
       const aStr = String(aVal);
@@ -51,7 +83,7 @@ export function ResultTable({
         ? aStr.localeCompare(bStr)
         : bStr.localeCompare(aStr);
     });
-  }, [rows, sortColumn, sortDirection]);
+  }, [rows, sortColumn, sortDirection, isColumnNumeric]);
 
   // 페이지네이션
   const totalPages = Math.ceil(sortedRows.length / pageSize);
@@ -83,17 +115,6 @@ export function ResultTable({
     return String(value);
   };
 
-  const getColumnType = (column: ColumnInfo): 'text' | 'number' | 'date' => {
-    const dataType = column.data_type.toLowerCase();
-    if (['integer', 'bigint', 'smallint', 'decimal', 'numeric', 'real', 'double precision', 'float'].some(t => dataType.includes(t))) {
-      return 'number';
-    }
-    if (['date', 'timestamp', 'time'].some(t => dataType.includes(t))) {
-      return 'date';
-    }
-    return 'text';
-  };
-
   if (rows.length === 0) {
     return (
       <div className="rounded-xl glass p-8 text-center">
@@ -104,38 +125,15 @@ export function ResultTable({
 
   return (
     <div className="space-y-4">
-      {/* 시각화 */}
-      {showVisualization && (
-        <ChartContainer
-          data={data}
-          onClose={() => setShowVisualization(false)}
-        />
-      )}
-
       {/* 결과 요약 */}
       <div className="flex items-center justify-between text-sm text-content-secondary">
         <span>
           총 {total_row_count.toLocaleString()}개 중 {returned_row_count.toLocaleString()}개 표시
           {is_truncated && <span className="ml-2 text-amber-400">(결과가 잘렸습니다)</span>}
         </span>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowVisualization(!showVisualization)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-              showVisualization
-                ? 'bg-primary-600/20 text-primary-400 border border-primary-500/30'
-                : 'glass text-content-secondary hover:text-content-primary hover:bg-surface-hover'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            시각화
-          </button>
-          <span className="text-content-tertiary">
-            실행 시간: {execution_time_ms.toFixed(0)}ms
-          </span>
-        </div>
+        <span className="text-content-tertiary">
+          실행 시간: {execution_time_ms.toFixed(0)}ms
+        </span>
       </div>
 
       {/* 테이블 */}
@@ -152,25 +150,27 @@ export function ResultTable({
                 >
                   <div className="flex items-center gap-1">
                     <span className="truncate">{column.name}</span>
-                    {sortColumn === column.name && (
-                      <svg
-                        className={`h-4 w-4 flex-shrink-0 transition-transform ${
-                          sortDirection === 'desc' ? 'rotate-180' : ''
-                        }`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
+                    <svg
+                      className={`h-4 w-4 flex-shrink-0 transition-all ${
+                        sortColumn === column.name
+                          ? `opacity-100 text-primary-400 ${sortDirection === 'desc' ? 'rotate-180' : ''}`
+                          : 'opacity-30 text-content-tertiary'
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
-                  <span className="text-xs font-normal normal-case text-content-tertiary">
-                    {column.data_type}
-                  </span>
+                  {column.data_type !== 'unknown' && (
+                    <span className="text-xs font-normal normal-case text-gray-500">
+                      {column.data_type}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -179,12 +179,12 @@ export function ResultTable({
             {paginatedRows.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((column) => {
-                  const columnType = getColumnType(column);
+                  const isNumeric = isColumnNumeric[column.name] || getColumnType(column) === 'number';
                   return (
                     <td
                       key={column.name}
                       className={`whitespace-nowrap ${
-                        columnType === 'number' ? 'text-right font-mono' : 'text-left'
+                        isNumeric ? 'text-right font-mono' : 'text-left'
                       } ${row[column.name] === null ? 'text-content-tertiary italic' : ''}`}
                       style={{ maxWidth: maxColumnWidth }}
                     >

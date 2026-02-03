@@ -89,11 +89,11 @@ export function PieChartComponent({ data, dataKey, nameKey }: PieChartProps) {
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: 'rgba(26, 26, 46, 0.95)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
             borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            color: '#f8fafc',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+            color: '#111827',
           }}
           formatter={(value: number) => [value.toLocaleString(), '']}
         />
@@ -102,7 +102,7 @@ export function PieChartComponent({ data, dataKey, nameKey }: PieChartProps) {
           align="right"
           verticalAlign="middle"
           formatter={(value: string) => (
-            <span style={{ color: '#94a3b8', fontSize: '12px' }}>{value}</span>
+            <span style={{ color: '#374151', fontSize: '12px' }}>{value}</span>
           )}
         />
       </PieChart>

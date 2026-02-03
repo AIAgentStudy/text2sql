@@ -88,12 +88,12 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="mt-6 text-center font-semibold text-sm text-content-secondary">
+      <div className="mt-6 text-center font-semibold text-sm text-content-primary">
         계정이 없으신가요?{" "}
         <button
           type="button"
           onClick={onRegisterClick}
-          className="text-primary-400 hover:text-primary-300 font-semibold transition-colors"
+          className="text-primary-700 hover:text-lime-600 font-semibold transition-colors"
         >
           회원가입
         </button>
@@ -101,21 +101,27 @@ export function LoginForm({ onSuccess, onRegisterClick }: LoginFormProps) {
 
       {/* 테스트 계정 안내 */}
       <div className="mt-6 p-4 bg-surface/50 rounded-xl border border-surface-border backdrop-blur-sm">
-        <p className="text-xs text-content-secondary mb-3 text-center font-medium">
+        <p className="text-xs text-black mb-3 text-center font-semibold">
           테스트 계정
         </p>
         <div className="space-y-2 text-xs">
           <div className="flex justify-between items-center">
             <span className="text-amber-400 font-semibold">Admin</span>
-            <span className="font-mono text-content-tertiary">admin@test.com / admin123</span>
+            <span className="font-semibold text-content-muted">
+              admin@test.com / admin123
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-accent-400 font-semibold">Manager</span>
-            <span className="font-mono text-content-tertiary">manager@test.com / admin123</span>
+            <span className="font-semibold text-content-muted">
+              manager@test.com / admin123
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-success-400 font-semibold">Viewer</span>
-            <span className="font-mono text-content-tertiary">viewer@test.com / admin123</span>
+            <span className="font-semibold text-content-muted">
+              viewer@test.com / admin123
+            </span>
           </div>
         </div>
         <p className="text-xs text-content-muted mt-3 text-center">

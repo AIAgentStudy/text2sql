@@ -17,7 +17,7 @@ from app.agent.state import create_initial_state
 from app.auth.dependencies import get_current_user
 from app.auth.permissions import get_accessible_tables
 from app.models.auth import UserWithRoles
-from app.models.entities import QueryRequestStatus
+from app.models.entities import ColumnInfo, QueryRequestStatus
 from app.models.requests import ChatRequest, ConfirmationRequest
 from app.models.responses import (
     ConfirmationResponse,
@@ -72,9 +72,7 @@ async def chat_endpoint(
             session_id = session.session_id
 
             # 세션 이벤트 전송
-            yield _format_sse_event(
-                SessionEvent(session_id=session_id)
-            )
+            yield _format_sse_event(SessionEvent(session_id=session_id))
 
             # 상태 이벤트: 생성 중
             yield _format_sse_event(
@@ -106,9 +104,35 @@ async def chat_endpoint(
             is_interrupted = False
             current_query_id = ""  # query_id 추적용
 
-            async for event in graph.astream(initial_state, config):
+            async for event in graph.astream(
+                initial_state, config, stream_mode="updates"
+            ):
                 # 노드별 이벤트 처리
                 for node_name, node_output in event.items():
+                    # __interrupt__ 이벤트 처리 (Human-in-the-Loop)
+                    if node_name == "__interrupt__":
+                        is_interrupted = True
+                        # interrupt 값에서 확인 요청 정보 추출
+                        if isinstance(node_output, tuple) and len(node_output) > 0:
+                            interrupt_value = getattr(node_output[0], "value", None)
+                            if isinstance(interrupt_value, dict):
+                                yield _format_sse_event(
+                                    ConfirmationRequiredEvent(
+                                        query_id=interrupt_value.get(
+                                            "query_id", current_query_id
+                                        ),
+                                        query=interrupt_value.get("query", ""),
+                                        explanation=interrupt_value.get(
+                                            "explanation", ""
+                                        ),
+                                    )
+                                )
+                        continue
+
+                    # dict가 아닌 이벤트 건너뛰기
+                    if not isinstance(node_output, dict):
+                        continue
+
                     final_state = node_output
 
                     # query_id 추적 (어느 노드에서든 설정되면 저장)
@@ -116,7 +140,9 @@ async def chat_endpoint(
                         current_query_id = node_output.get("query_id")
 
                     # 쿼리 생성 완료 시
-                    if node_name == "query_generation" and node_output.get("generated_query"):
+                    if node_name == "query_generation" and node_output.get(
+                        "generated_query"
+                    ):
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.VALIDATING,
@@ -131,25 +157,15 @@ async def chat_endpoint(
                         )
 
                     # 검증 완료 시
-                    if node_name == "query_validation" and node_output.get("is_query_valid"):
+                    if node_name == "query_validation" and node_output.get(
+                        "is_query_valid"
+                    ):
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.AWAITING_CONFIRM,
                                 message="쿼리 확인을 기다리고 있습니다...",
                             )
                         )
-
-                    # 사용자 확인 대기 중 (interrupt 발생)
-                    if node_name == "user_confirmation":
-                        if node_output.get("user_approved") is None:
-                            is_interrupted = True
-                            yield _format_sse_event(
-                                ConfirmationRequiredEvent(
-                                    query_id=current_query_id,  # 추적한 query_id 사용
-                                    query=node_output.get("generated_query", ""),
-                                    explanation=node_output.get("query_explanation", ""),
-                                )
-                            )
 
                     # 쿼리 실행 중
                     if node_name == "query_execution":
@@ -182,15 +198,26 @@ async def chat_endpoint(
                     rows = final_state.get("query_result", [])
                     columns = final_state.get("result_columns", [])
 
+                    column_infos = [
+                        ColumnInfo(
+                            name=col["name"] if isinstance(col, dict) else col,
+                            data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
+                            is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                        )
+                        for col in columns
+                    ]
                     yield _format_sse_event(
                         ResultEvent(
                             data=QueryResultData(
                                 rows=rows,
                                 total_row_count=final_state.get("total_row_count", 0),
                                 returned_row_count=len(rows),
-                                columns=[],  # 단순화
-                                is_truncated=len(rows) < final_state.get("total_row_count", 0),
-                                execution_time_ms=final_state.get("execution_time_ms", 0),
+                                columns=column_infos,
+                                is_truncated=len(rows)
+                                < final_state.get("total_row_count", 0),
+                                execution_time_ms=final_state.get(
+                                    "execution_time_ms", 0
+                                ),
                             )
                         )
                     )
@@ -268,7 +295,6 @@ async def confirm_query(
         # 사용자 응답 구성
         user_response = {
             "approved": request.approved,
-            "modified_query": request.modified_query,
         }
 
         if not request.approved:
@@ -276,13 +302,14 @@ async def confirm_query(
             logger.info(f"사용자가 쿼리 실행을 거부함: {query_id}")
 
             # Command로 워크플로우 재개 (거부 상태)
-            final_state = None
+            final_state = {}
             async for event in graph.astream(
-                Command(resume=user_response),
-                config,
+                Command(resume=user_response), config, stream_mode="updates"
             ):
                 for node_name, node_output in event.items():
-                    final_state = node_output
+                    if not isinstance(node_output, dict):
+                        continue
+                    final_state.update(node_output)
 
             return ConfirmationResponse(
                 success=True,
@@ -290,21 +317,40 @@ async def confirm_query(
                 error=None,
             )
 
-        # 승인 시 Command(resume)로 워크플로우 재개
+        # 승인 시 권한 재검증
         logger.info(f"사용자가 쿼리 실행을 승인함: {query_id}")
 
-        # 수정된 쿼리가 있는 경우
-        if request.modified_query:
-            logger.info(f"수정된 쿼리로 실행: {request.modified_query[:50]}...")
+        # 현재 사용자의 권한으로 쿼리 재검증
+        graph_state = await graph.aget_state(config)
+        generated_query = graph_state.values.get("generated_query", "") if graph_state.values else ""
+        if generated_query:
+            from app.auth.permissions import validate_query_permission
+
+            has_permission, unauthorized_tables = await validate_query_permission(
+                current_user, generated_query
+            )
+            if not has_permission:
+                logger.warning(
+                    f"권한 재검증 실패 - 비인가 테이블: {unauthorized_tables}"
+                )
+                return ConfirmationResponse(
+                    success=False,
+                    result=None,
+                    error=ErrorDetail(
+                        code="PERMISSION_DENIED",
+                        message=f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized_tables)}",
+                    ),
+                )
 
         # Command로 워크플로우 재개
-        final_state = None
+        final_state = {}
         async for event in graph.astream(
-            Command(resume=user_response),
-            config,
+            Command(resume=user_response), config, stream_mode="updates"
         ):
             for node_name, node_output in event.items():
-                final_state = node_output
+                if not isinstance(node_output, dict):
+                    continue
+                final_state.update(node_output)
 
         # 결과 반환
         if final_state:
@@ -318,13 +364,22 @@ async def confirm_query(
                     ),
                 )
 
+            result_columns = final_state.get("result_columns", [])
+            column_infos = [
+                ColumnInfo(
+                    name=col["name"] if isinstance(col, dict) else col,
+                    data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
+                    is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                )
+                for col in result_columns
+            ]
             return ConfirmationResponse(
                 success=True,
                 result=QueryResultData(
                     rows=final_state.get("query_result", []),
                     total_row_count=final_state.get("total_row_count", 0),
                     returned_row_count=len(final_state.get("query_result", [])),
-                    columns=[],
+                    columns=column_infos,
                     is_truncated=False,
                     execution_time_ms=final_state.get("execution_time_ms", 0),
                 ),

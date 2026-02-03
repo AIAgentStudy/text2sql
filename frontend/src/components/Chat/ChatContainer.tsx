@@ -10,7 +10,7 @@ import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { useSession } from "../../hooks/useSession";
 import { useChat } from "../../hooks/useChat";
-import type { LLMProvider } from "../../types";
+import type { LLMProvider, QueryResultData } from "../../types";
 
 const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openai", label: "OpenAI" },
@@ -21,9 +21,11 @@ const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
 interface ChatContainerProps {
   /** LLM 제공자 */
   llmProvider?: LLMProvider;
+  /** 결과 선택 콜백 (우측 패널에 표시) */
+  onSelectResult?: (result: QueryResultData, query: string) => void;
 }
 
-export function ChatContainer({ llmProvider = "openai" }: ChatContainerProps) {
+export function ChatContainer({ llmProvider = "openai", onSelectResult }: ChatContainerProps) {
   const [selectedProvider, setSelectedProvider] =
     useState<LLMProvider>(llmProvider);
   const [inputMessage, setInputMessage] = useState("");
@@ -125,6 +127,7 @@ export function ChatContainer({ llmProvider = "openai" }: ChatContainerProps) {
           isLoading={isLoading}
           currentStatus={currentStatus}
           onExampleSelect={handleExampleSelect}
+          onSelectResult={onSelectResult}
         />
       </div>
 
@@ -137,7 +140,7 @@ export function ChatContainer({ llmProvider = "openai" }: ChatContainerProps) {
           placeholder={
             awaitingConfirmation
               ? "쿼리 실행 여부를 먼저 선택해주세요."
-              : '자연어로 질문해보세요. 예: "지난달 매출 상위 10개 제품이 뭐야?"'
+              : '자연어로 질문해보세요.'
           }
           value={inputMessage}
           onChange={setInputMessage}

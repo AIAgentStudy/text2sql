@@ -7,7 +7,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.auth.dependencies import get_current_user, get_user_with_roles
 from app.auth.jwt import create_access_token, create_refresh_token, verify_token
@@ -196,14 +196,23 @@ async def logout(
     description="Refresh Token으로 새로운 Access Token을 발급받습니다.",
 )
 async def refresh_token(
+    http_request: Request,
     request: RefreshRequest,
     response: Response,
 ) -> TokenResponse:
     """토큰 갱신"""
     settings = get_settings()
 
+    # 쿠키에서 refresh_token 우선 읽기, body fallback
+    token = http_request.cookies.get("refresh_token") or request.refresh_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh Token이 제공되지 않았습니다",
+        )
+
     # Refresh Token 검증
-    payload = verify_token(request.refresh_token, token_type="refresh")
+    payload = verify_token(token, token_type="refresh")
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

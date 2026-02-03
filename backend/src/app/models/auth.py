@@ -3,7 +3,7 @@
 """
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -28,8 +28,8 @@ class LoginRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    """토큰 갱신 요청"""
-    refresh_token: str = Field(..., description="Refresh Token")
+    """토큰 갱신 요청 (쿠키 우선, body fallback)"""
+    refresh_token: Optional[str] = Field(None, description="Refresh Token (쿠키 없을 때 fallback)")
 
 
 # === 응답 모델 ===

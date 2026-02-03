@@ -47,6 +47,26 @@ RESET_COMMAND_PATTERNS = [
     r"^새\s*대화$",
 ]
 
+FEW_SHOT_EXAMPLES = """
+## 예시
+
+질문: "지역별 총 매출"
+```sql
+SELECT c.region AS "지역", COALESCE(SUM(o.amount), 0) AS "총매출액"
+FROM orders o INNER JOIN customers c ON c.id = o.customer_id
+GROUP BY c.region ORDER BY "총매출액" DESC;
+```
+
+질문: "이번 달 매출 상위 5개 상품"
+```sql
+SELECT p.name AS "상품명", COALESCE(SUM(oi.quantity), 0) AS "판매수량"
+FROM order_items oi INNER JOIN products p ON p.id = oi.product_id
+INNER JOIN orders o ON o.id = oi.order_id
+WHERE o.order_date >= DATE_TRUNC('month', CURRENT_DATE)
+GROUP BY p.id, p.name ORDER BY "판매수량" DESC LIMIT 5;
+```
+"""
+
 SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
 사용자의 자연어 질문을 SQL SELECT 쿼리로 변환하는 것이 당신의 임무입니다.
 
@@ -57,6 +77,15 @@ SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
 4. 결과는 사용자가 이해하기 쉽게 정렬하세요.
 5. 집계 함수 사용 시 적절한 GROUP BY를 포함하세요.
 6. 날짜 관련 질문은 PostgreSQL 날짜 함수를 사용하세요.
+7. 한국어 텍스트 검색 시 ILIKE와 '%패턴%'을 사용하세요.
+   예: '강남' 검색 → WHERE name ILIKE '%강남%' (정확한 값을 알 수 없으므로 부분 일치 사용)
+8. 지역명, 제품명, 고객명 등 텍스트 컬럼 필터링은 항상 ILIKE를 우선 고려하세요.
+9. 집계 쿼리에서 명시적 정렬 요청이 없으면 집계 값 기준 내림차순(DESC)으로 정렬하세요.
+10. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
+11. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
+12. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+
+{few_shot_examples}
 
 ## 출력 형식
 다음 형식으로 정확히 응답하세요:
@@ -89,6 +118,15 @@ CONTEXT_AWARE_SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문�
 3. 이전 대화 맥락을 활용하여 현재 질문을 정확히 이해하세요.
 4. "그중에", "거기서" 등의 표현은 이전 쿼리 결과를 필터링하는 것입니다.
 5. 이전 쿼리의 조건을 유지하면서 새로운 조건을 추가하세요.
+6. 한국어 텍스트 검색 시 ILIKE와 '%패턴%'을 사용하세요.
+   예: '강남' 검색 → WHERE name ILIKE '%강남%' (정확한 값을 알 수 없으므로 부분 일치 사용)
+7. 지역명, 제품명, 고객명 등 텍스트 컬럼 필터링은 항상 ILIKE를 우선 고려하세요.
+8. 집계 쿼리에서 명시적 정렬 요청이 없으면 집계 값 기준 내림차순(DESC)으로 정렬하세요.
+9. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
+10. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
+11. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+
+{few_shot_examples}
 
 ## 출력 형식
 다음 형식으로 정확히 응답하세요:
@@ -161,7 +199,7 @@ def build_context_aware_prompt(
         맥락이 포함된 프롬프트
     """
     if not message_history:
-        return SYSTEM_PROMPT.format(schema=schema)
+        return SYSTEM_PROMPT.format(schema=schema, few_shot_examples=FEW_SHOT_EXAMPLES)
 
     # 대화 히스토리 포맷팅
     history_lines = []
@@ -187,6 +225,7 @@ def build_context_aware_prompt(
     return CONTEXT_AWARE_SYSTEM_PROMPT.format(
         conversation_history=conversation_history,
         schema=schema,
+        few_shot_examples=FEW_SHOT_EXAMPLES,
     )
 
 
@@ -235,6 +274,17 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     attempt = state.get("generation_attempt", 0) + 1
     user_question = state["user_question"]
     message_history = state.get("messages", [])
+
+    # 접근 가능한 테이블이 없으면 LLM 호출 없이 즉시 에러 반환 (이중 안전장치)
+    accessible_tables = state.get("accessible_tables", [])
+    if accessible_tables is not None and len(accessible_tables) == 0:
+        logger.warning("접근 가능한 테이블이 없음 - LLM 호출 생략")
+        return {
+            "generation_attempt": attempt,
+            "generated_query": "",
+            "query_explanation": "",
+            "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
+        }
 
     logger.info(
         f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
@@ -299,7 +349,10 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
                 schema=state["database_schema"],
             )
         else:
-            system_prompt = SYSTEM_PROMPT.format(schema=state["database_schema"])
+            system_prompt = SYSTEM_PROMPT.format(
+                schema=state["database_schema"],
+                few_shot_examples=FEW_SHOT_EXAMPLES,
+            )
 
         # 메시지 구성
         messages = format_messages_for_llm(

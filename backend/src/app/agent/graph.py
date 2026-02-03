@@ -20,9 +20,21 @@ from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
 from app.agent.nodes.user_confirmation import user_confirmation_node
 from app.agent.state import Text2SQLAgentState
-from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def should_continue_after_schema(
+    state: Text2SQLAgentState,
+) -> Literal["generate", "format_error"]:
+    """
+    스키마 조회 후 다음 단계 결정
+
+    스키마 조회 중 에러(권한 부족 등)가 발생하면 즉시 응답 포맷팅으로 이동
+    """
+    if state.get("execution_error"):
+        return "format_error"
+    return "generate"
 
 
 def should_continue_after_generation(
@@ -102,11 +114,11 @@ def build_graph() -> StateGraph:
     Text2SQL 에이전트 그래프 빌드
 
     워크플로우:
-    START → 스키마 조회 → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
-                              ↑           ↓ (재시도)     ↓ (수정됨)
-                              └───────────┘            쿼리 검증
-                                          ↓ (실패)        ↓ (취소)
-                                    응답 포맷팅 ←─────────┘
+    START → 스키마 조회 → (권한 체크) → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
+                  ↓ (권한 없음)          ↑           ↓ (재시도)     ↓ (수정됨)
+            응답 포맷팅                  └───────────┘            쿼리 검증
+                                                    ↓ (실패)        ↓ (취소)
+                                              응답 포맷팅 ←─────────┘
 
     Returns:
         StateGraph: 컴파일되지 않은 그래프
@@ -128,8 +140,15 @@ def build_graph() -> StateGraph:
     # START → 스키마 조회
     graph.add_edge(START, "schema_retrieval")
 
-    # 스키마 조회 → 쿼리 생성
-    graph.add_edge("schema_retrieval", "query_generation")
+    # 스키마 조회 → 조건부 분기 (쿼리 생성 또는 에러)
+    graph.add_conditional_edges(
+        "schema_retrieval",
+        should_continue_after_schema,
+        {
+            "generate": "query_generation",
+            "format_error": "response_formatting",
+        },
+    )
 
     # 쿼리 생성 → 조건부 분기 (검증 또는 에러)
     graph.add_conditional_edges(
@@ -191,22 +210,12 @@ def compile_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
     """
     graph = build_graph()
 
-    # interrupt_before 설정 (Human-in-the-Loop)
-    # auto_confirm_queries가 False일 때만 interrupt 활성화
-    settings = get_settings()
-    interrupt_nodes = []
-    if not settings.auto_confirm_queries:
-        interrupt_nodes = ["user_confirmation"]
-
+    # user_confirmation_node 내부에서 interrupt()를 직접 호출하므로
+    # interrupt_before는 사용하지 않음 (이중 interrupt 방지)
     if checkpointer:
-        compiled = graph.compile(
-            checkpointer=checkpointer,
-            interrupt_before=interrupt_nodes if interrupt_nodes else None,
-        )
+        compiled = graph.compile(checkpointer=checkpointer)
     else:
-        compiled = graph.compile(
-            interrupt_before=interrupt_nodes if interrupt_nodes else None,
-        )
+        compiled = graph.compile()
 
     logger.info("Text2SQL 에이전트 그래프 컴파일 완료")
     return compiled

@@ -11,6 +11,7 @@ import { BarChartComponent } from './BarChart';
 import { LineChartComponent } from './LineChart';
 import { PieChartComponent } from './PieChart';
 import { ChartSelector, type ChartType } from './ChartSelector';
+import { isNumericValue, toNumber } from '../../utils/typeChecks';
 
 interface ChartContainerProps {
   data: QueryResultData;
@@ -33,6 +34,13 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
 
     columns.forEach((col) => {
       const dataType = col.data_type.toLowerCase();
+      if (dataType === 'unknown') {
+        const sampleValues = rows.slice(0, 5).map(r => r[col.name]).filter(v => v != null);
+        const isNumeric = sampleValues.length > 0 && sampleValues.every(v => isNumericValue(v));
+        if (isNumeric) numeric.push(col.name);
+        else category.push(col.name);
+        return;
+      }
       if (
         ['integer', 'bigint', 'smallint', 'decimal', 'numeric', 'real', 'double precision', 'float'].some(
           (t) => dataType.includes(t)
@@ -45,7 +53,7 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
     });
 
     return { numericColumns: numeric, categoryColumns: category };
-  }, [columns]);
+  }, [columns, rows]);
 
   // 추천 차트 유형 결정
   const recommendedChartType = useMemo((): ChartType => {
@@ -88,32 +96,37 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
 
   // 차트 데이터 준비
   const chartData = useMemo(() => {
+    const numericSet = new Set(numericColumns);
     return rows.map((row) => {
       const item: Record<string, string | number> = {};
       columns.forEach((col) => {
         const value = row[col.name];
-        item[col.name] = typeof value === 'number' ? value : String(value ?? '');
+        if (numericSet.has(col.name) && isNumericValue(value)) {
+          item[col.name] = toNumber(value);
+        } else {
+          item[col.name] = typeof value === 'number' ? value : String(value ?? '');
+        }
       });
       return item;
     });
-  }, [rows, columns]);
+  }, [rows, columns, numericColumns]);
 
   // 데이터가 없거나 차트를 그릴 수 없는 경우
   if (rows.length === 0 || columns.length < 2) {
     return (
-      <div className="card p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-content-primary">데이터 시각화</h3>
+          <h3 className="text-lg font-semibold text-gray-900">데이터 시각화</h3>
           <button
             onClick={onClose}
-            className="text-content-tertiary hover:text-content-primary transition-colors"
+            className="text-gray-400 hover:text-gray-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <p className="text-content-secondary text-center py-8">
+        <p className="text-gray-500 text-center py-8">
           시각화할 수 있는 데이터가 충분하지 않습니다.
         </p>
       </div>
@@ -121,13 +134,13 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
   }
 
   return (
-    <div className="card p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-content-primary">데이터 시각화</h3>
+        <h3 className="text-lg font-semibold text-gray-900">데이터 시각화</h3>
         <button
           onClick={onClose}
-          className="text-content-tertiary hover:text-content-primary transition-colors"
+          className="text-gray-400 hover:text-gray-700 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -168,7 +181,7 @@ export function ChartContainer({ data, onClose }: ChartContainerProps) {
       </div>
 
       {/* 차트 정보 */}
-      <div className="mt-4 text-xs text-content-tertiary">
+      <div className="mt-4 text-xs text-gray-500">
         <p>X축: {chartConfig.xAxis} | Y축: {chartConfig.yAxis.join(', ')}</p>
         <p>데이터 행 수: {rows.length}개</p>
       </div>

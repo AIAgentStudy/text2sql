@@ -76,6 +76,14 @@ class Settings(BaseSettings):
         description="로그 레벨",
     )
 
+    # === LangSmith Tracing 설정 ===
+    langsmith_tracing: bool = Field(default=False, description="LangSmith 트레이싱 활성화")
+    langsmith_endpoint: str = Field(
+        default="https://api.smith.langchain.com", description="LangSmith 엔드포인트"
+    )
+    langsmith_api_key: str | None = Field(default=None, description="LangSmith API 키")
+    langsmith_project: str = Field(default="text2sql", description="LangSmith 프로젝트명")
+
     # === CORS 설정 ===
     cors_origins: str = Field(
         default="http://localhost:5173,http://localhost:3000",
