@@ -128,11 +128,11 @@ def build_graph() -> StateGraph:
     Text2SQL 에이전트 그래프 빌드
 
     워크플로우:
-    START → 스키마 조회 → 권한 사전 검사 → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
-                  ↓ (에러)     ↓ (권한 없음)       ↑           ↓ (재시도)     ↓ (수정됨)
-            응답 포맷팅   응답 포맷팅              └───────────┘            쿼리 검증
-                                                              ↓ (실패)        ↓ (취소)
-                                                        응답 포맷팅 ←─────────┘
+    START → 권한 사전 검사 → 스키마 조회 → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
+              ↓ (권한 없음)     ↓ (에러)       ↑           ↓ (재시도)     ↓ (수정됨)
+            응답 포맷팅   응답 포맷팅          └───────────┘            쿼리 검증
+                                                          ↓ (실패)        ↓ (취소)
+                                                    응답 포맷팅 ←─────────┘
 
     Returns:
         StateGraph: 컴파일되지 않은 그래프
@@ -152,23 +152,23 @@ def build_graph() -> StateGraph:
     graph.add_node("response_formatting", response_formatting_node)
 
     # 엣지 추가
-    # START → 스키마 조회
-    graph.add_edge(START, "schema_retrieval")
+    # START → 권한 사전 검사 (Fail Fast: 권한 검사를 먼저 수행)
+    graph.add_edge(START, "permission_pre_check")
 
-    # 스키마 조회 → 조건부 분기 (권한 사전 검사 또는 에러)
+    # 권한 사전 검사 → 조건부 분기 (스키마 조회 또는 에러)
     graph.add_conditional_edges(
-        "schema_retrieval",
-        should_continue_after_schema,
+        "permission_pre_check",
+        should_continue_after_permission_check,
         {
-            "generate": "permission_pre_check",
+            "generate": "schema_retrieval",
             "format_error": "response_formatting",
         },
     )
 
-    # 권한 사전 검사 → 조건부 분기 (쿼리 생성 또는 에러)
+    # 스키마 조회 → 조건부 분기 (쿼리 생성 또는 에러)
     graph.add_conditional_edges(
-        "permission_pre_check",
-        should_continue_after_permission_check,
+        "schema_retrieval",
+        should_continue_after_schema,
         {
             "generate": "query_generation",
             "format_error": "response_formatting",

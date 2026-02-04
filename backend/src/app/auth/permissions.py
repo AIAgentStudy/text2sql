@@ -163,8 +163,35 @@ def extract_tables_from_query(sql_query: str) -> list[str]:
     """
     SQL 쿼리에서 참조된 테이블 이름 추출
 
-    간단한 파싱으로 FROM, JOIN 절에서 테이블 이름을 추출합니다.
-    완벽한 SQL 파서는 아니므로, 복잡한 쿼리에서는 정확하지 않을 수 있습니다.
+    sqlglot을 사용하여 AST 기반으로 테이블을 정확히 추출합니다.
+    서브쿼리, CTE, 콤마 구분 테이블, DELETE, 스키마 접두사 등을 모두 지원합니다.
+    파싱 실패 시 정규식 기반 fallback을 사용합니다.
+
+    Args:
+        sql_query: SQL 쿼리 문자열
+
+    Returns:
+        추출된 테이블 이름 목록
+    """
+    import sqlglot
+
+    try:
+        tables: set[str] = set()
+        for statement in sqlglot.parse(sql_query, error_level=sqlglot.ErrorLevel.IGNORE):
+            if statement is None:
+                continue
+            for table in statement.find_all(sqlglot.exp.Table):
+                if table.name:
+                    tables.add(table.name.lower())
+        return list(tables)
+    except Exception:
+        logger.warning("sqlglot 파싱 실패, 정규식 fallback 사용")
+        return _extract_tables_regex(sql_query)
+
+
+def _extract_tables_regex(sql_query: str) -> list[str]:
+    """
+    SQL 쿼리에서 정규식으로 테이블 이름 추출 (fallback용)
 
     Args:
         sql_query: SQL 쿼리 문자열
@@ -174,11 +201,10 @@ def extract_tables_from_query(sql_query: str) -> list[str]:
     """
     import re
 
-    # SQL 키워드 패턴
     sql_upper = sql_query.upper()
     sql_normalized = sql_query
 
-    tables = set()
+    tables: set[str] = set()
 
     # FROM 절에서 테이블 추출
     from_pattern = r'\bFROM\s+([a-zA-Z_][a-zA-Z0-9_]*)'

@@ -19,9 +19,11 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 def get_random_date(days_back=30):
-    """최근 30일 이내의 랜덤 날짜 반환"""
+    """최근 N일 이내의 랜덤 날짜 반환 (음수면 미래 날짜)"""
     end = datetime.now()
     start = end - timedelta(days=days_back)
+    if start > end:
+        start, end = end, start
     random_date = start + timedelta(
         seconds=random.randint(0, int((end - start).total_seconds()))
     )

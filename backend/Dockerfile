@@ -39,17 +39,22 @@ COPY src/ ./src/
 # Alembic 마이그레이션 파일 복사
 COPY alembic.ini ./
 COPY migrations/ ./migrations/
+COPY entrypoint.sh ./
 
 # Python 경로 설정
 ENV PYTHONPATH=/app/src
 
-# 비루트 사용자 생성 및 전환
+# 비루트 사용자 생성, 스크립트 권한 설정
+# Windows에서 작성된 스크립트의 CRLF 문제를 방지하기 위해 sed 명령어로 변환
 RUN useradd --create-home --shell /bin/bash appuser && \
+    chmod +x entrypoint.sh && \
+    sed -i 's/\r$//' entrypoint.sh && \
     chown -R appuser:appuser /app
+
 USER appuser
 
 # 포트 노출
 EXPOSE 8000
 
-# 서버 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 서버 실행 (entrypoint.sh를 통해 마이그레이션 후 실행)
+CMD ["./entrypoint.sh"]
