@@ -10,6 +10,7 @@ from typing import Literal
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
+from app.agent.nodes.permission_pre_check import permission_pre_check_node
 from app.agent.nodes.query_execution import query_execution_node
 from app.agent.nodes.query_generation import query_generation_node
 from app.agent.nodes.query_validation import (
@@ -31,6 +32,19 @@ def should_continue_after_schema(
     스키마 조회 후 다음 단계 결정
 
     스키마 조회 중 에러(권한 부족 등)가 발생하면 즉시 응답 포맷팅으로 이동
+    """
+    if state.get("execution_error"):
+        return "format_error"
+    return "generate"
+
+
+def should_continue_after_permission_check(
+    state: Text2SQLAgentState,
+) -> Literal["generate", "format_error"]:
+    """
+    권한 사전 검사 후 다음 단계 결정
+
+    권한 위반이 감지되면 즉시 응답 포맷팅으로 이동
     """
     if state.get("execution_error"):
         return "format_error"
@@ -114,11 +128,11 @@ def build_graph() -> StateGraph:
     Text2SQL 에이전트 그래프 빌드
 
     워크플로우:
-    START → 스키마 조회 → (권한 체크) → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
-                  ↓ (권한 없음)          ↑           ↓ (재시도)     ↓ (수정됨)
-            응답 포맷팅                  └───────────┘            쿼리 검증
-                                                    ↓ (실패)        ↓ (취소)
-                                              응답 포맷팅 ←─────────┘
+    START → 스키마 조회 → 권한 사전 검사 → 쿼리 생성 → 쿼리 검증 → 사용자 확인 → 쿼리 실행 → 응답 포맷팅 → END
+                  ↓ (에러)     ↓ (권한 없음)       ↑           ↓ (재시도)     ↓ (수정됨)
+            응답 포맷팅   응답 포맷팅              └───────────┘            쿼리 검증
+                                                              ↓ (실패)        ↓ (취소)
+                                                        응답 포맷팅 ←─────────┘
 
     Returns:
         StateGraph: 컴파일되지 않은 그래프
@@ -130,6 +144,7 @@ def build_graph() -> StateGraph:
 
     # 노드 추가
     graph.add_node("schema_retrieval", schema_retrieval_node)
+    graph.add_node("permission_pre_check", permission_pre_check_node)
     graph.add_node("query_generation", query_generation_node)
     graph.add_node("query_validation", query_validation_node)
     graph.add_node("user_confirmation", user_confirmation_node)
@@ -140,10 +155,20 @@ def build_graph() -> StateGraph:
     # START → 스키마 조회
     graph.add_edge(START, "schema_retrieval")
 
-    # 스키마 조회 → 조건부 분기 (쿼리 생성 또는 에러)
+    # 스키마 조회 → 조건부 분기 (권한 사전 검사 또는 에러)
     graph.add_conditional_edges(
         "schema_retrieval",
         should_continue_after_schema,
+        {
+            "generate": "permission_pre_check",
+            "format_error": "response_formatting",
+        },
+    )
+
+    # 권한 사전 검사 → 조건부 분기 (쿼리 생성 또는 에러)
+    graph.add_conditional_edges(
+        "permission_pre_check",
+        should_continue_after_permission_check,
         {
             "generate": "query_generation",
             "format_error": "response_formatting",

@@ -35,9 +35,8 @@ class RefreshRequest(BaseModel):
 # === 응답 모델 ===
 
 class TokenResponse(BaseModel):
-    """토큰 응답"""
+    """토큰 응답 (refresh_token은 HttpOnly 쿠키로만 전달)"""
     access_token: str = Field(..., description="Access Token")
-    refresh_token: str = Field(..., description="Refresh Token")
     token_type: Literal["bearer"] = "bearer"
     expires_in: int = Field(..., description="Access Token 만료 시간 (초)")
 

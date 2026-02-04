@@ -159,13 +159,12 @@ class HealthDependencies(BaseModel):
     """헬스체크 의존성 상태"""
 
     database: Literal["ok", "error"]
-    llm: Literal["ok", "error"]
 
 
 class HealthResponse(BaseModel):
     """헬스체크 응답"""
 
-    status: Literal["healthy", "degraded", "unhealthy"]
+    status: Literal["healthy", "unhealthy"]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     dependencies: HealthDependencies | None = None
 

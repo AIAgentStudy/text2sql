@@ -12,6 +12,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ChatPage } from './pages/ChatPage';
 import { GuidePage } from './pages/GuidePage';
+import { GraphPage } from './pages/GraphPage';
 
 // React Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -50,6 +51,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <GuidePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 워크플로우 그래프 */}
+            <Route
+              path="/graph"
+              element={
+                <ProtectedRoute>
+                  <GraphPage />
                 </ProtectedRoute>
               }
             />

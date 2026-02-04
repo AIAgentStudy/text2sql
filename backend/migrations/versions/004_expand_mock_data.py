@@ -89,12 +89,6 @@ def upgrade() -> None:
         FROM roles r
         WHERE r.name IN ('admin', 'manager');
     """)
-    op.execute("""
-        INSERT INTO table_permissions (role_id, table_name, can_read, can_write)
-        SELECT r.id, 'sales', TRUE, FALSE
-        FROM roles r
-        WHERE r.name = 'viewer';
-    """)
 
     # ============================================================
     # 3. 확장 목데이터 삽입

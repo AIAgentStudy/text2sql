@@ -184,12 +184,17 @@ async def chat_endpoint(
 
             # 최종 결과 전송
             if final_state:
-                if final_state.get("execution_error"):
+                if final_state.get("execution_error") or final_state.get("response_format") == "error":
+                    error_message = (
+                        final_state.get("execution_error")
+                        or final_state.get("final_response")
+                        or "요청을 처리하는 중 오류가 발생했습니다."
+                    )
                     yield _format_sse_event(
                         ErrorEvent(
                             error=ErrorDetail(
                                 code="EXECUTION_ERROR",
-                                message=final_state.get("execution_error", ""),
+                                message=error_message,
                             )
                         )
                     )
