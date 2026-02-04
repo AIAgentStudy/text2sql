@@ -155,6 +155,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
       let queryPreview: { query: string; explanation: string; queryId: string } | undefined;
       let queryResult: QueryResultData | undefined;
+      let hasError = false;
 
       try {
         await streamChat(
@@ -224,6 +225,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             },
 
             onError: (event) => {
+              hasError = true;
+
               setState((prev) => ({
                 ...prev,
                 error: event.error,
@@ -237,6 +240,17 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
             },
 
             onDone: (event) => {
+              if (hasError) {
+                // 에러가 이미 처리된 경우 메시지를 덮어쓰지 않고 상태만 업데이트
+                setState((prev) => ({
+                  ...prev,
+                  isLoading: false,
+                  currentStatus: 'failed',
+                  awaitingConfirmation: false,
+                }));
+                return;
+              }
+
               // 최종 메시지 업데이트
               updateMessage(assistantMessageId, {
                 content: queryResult

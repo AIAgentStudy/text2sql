@@ -377,17 +377,18 @@ def upgrade() -> None:
     op.execute("COMMENT ON COLUMN route_stops.status IS '정류 상태 (pending, arrived, completed, skipped)'")
 
     # === 물류 테이블 권한 설정 ===
-    # Viewer: 창고/제품/재고 테이블만 (5개)
-    # Manager/Admin: 전체 물류 테이블 (15개)
+    # Viewer: 창고/제품/재고/재고이력 테이블 (6개)
+    # Manager/Admin: 전체 물류 테이블 (16개, sales 포함)
 
     # Viewer가 접근 가능한 테이블 (기본 조회용)
     viewer_tables = [
-        'warehouses', 'warehouse_zones', 'product_categories', 'products', 'inventory'
+        'warehouses', 'warehouse_zones', 'product_categories', 'products', 'inventory',
+        'inventory_transactions'
     ]
 
     # Manager/Admin만 접근 가능한 테이블 (고객, 주문, 배송 관련)
     manager_only_tables = [
-        'inventory_transactions', 'customers', 'orders', 'order_items',
+        'customers', 'orders', 'order_items',
         'carriers', 'vehicles', 'shipments', 'shipment_items',
         'delivery_routes', 'route_stops'
     ]

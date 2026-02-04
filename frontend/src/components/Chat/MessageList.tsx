@@ -4,7 +4,7 @@
  * 채팅 메시지들을 표시하고 자동 스크롤을 지원합니다.
  */
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import type { ChatMessage, QueryResultData } from "../../types";
 import { QueryPreview } from "./QueryPreview";
 import { ErrorMessage } from "../common/ErrorMessage";
@@ -59,11 +59,73 @@ export function MessageList({
     }).format(date);
   };
 
-  const exampleQueries = [
-    "지난달 매출 상위 10개 제품은?",
-    "재고가 부족한 창고 목록을 보여줘",
-    "이번 분기 총 주문 건수는?",
+  const exampleCategories = [
+    {
+      category: "재고/창고",
+      role: "모든 역할",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      queries: [
+        "각 창고별 현재 총 재고 수량은?",
+        "재고가 10개 이하인 상품 목록을 보여줘",
+        "이번 달 입고된 재고 이력을 보여줘",
+      ],
+    },
+    {
+      category: "상품/카테고리",
+      role: "모든 역할",
+      color: "text-teal-600",
+      bg: "bg-teal-50",
+      queries: [
+        "카테고리별 상품 수와 평균 단가는?",
+        "가장 비싼 상품 5개를 알려줘",
+      ],
+    },
+    {
+      category: "주문/고객",
+      role: "Manager+",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      queries: [
+        "이번 달 주문 건수와 총 금액은?",
+        "주문 금액 상위 5개 고객사는?",
+        "최근 3개월 월별 주문 추이를 보여줘",
+      ],
+    },
+    {
+      category: "배송",
+      role: "Manager+",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      queries: [
+        "운송사별 배송 완료 건수는?",
+        "현재 배송 중인 건의 목록을 보여줘",
+      ],
+    },
+    {
+      category: "매출 분석",
+      role: "Manager+",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+      queries: [
+        "이번 달 지역별 매출 합계를 알려줘",
+        "가장 많이 팔린 상품 TOP 10은?",
+      ],
+    },
   ];
+
+  // 카테고리별 1개씩 랜덤 선택하여 총 5개 표시
+  const selectedExamples = useMemo(
+    () =>
+      exampleCategories.map((cat) => ({
+        category: cat.category,
+        role: cat.role,
+        color: cat.color,
+        bg: cat.bg,
+        query: cat.queries[Math.floor(Math.random() * cat.queries.length)],
+      })),
+    [],
+  );
 
   if (messages.length === 0) {
     return (
@@ -104,13 +166,21 @@ export function MessageList({
           <p className="text-xs text-gray-100 font-medium mb-3">
             예시 질문을 클릭해보세요
           </p>
-          {exampleQueries.map((example, index) => (
+          {selectedExamples.map((example, index) => (
             <button
               key={index}
               className="w-full text-left px-4 py-3 rounded-xl bg-white/60 border border-gray-300 text-black text-sm font-medium hover:bg-white/80 hover:border-primary-500/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
-              onClick={() => onExampleSelect?.(example)}
+              onClick={() => onExampleSelect?.(example.query)}
             >
-              "{example}"
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-xs font-semibold ${example.color} ${example.bg} px-1.5 py-0.5 rounded`}>
+                  {example.category}
+                </span>
+                <span className="text-[10px] text-gray-400">
+                  {example.role}
+                </span>
+              </div>
+              <span className="text-sm">"{example.query}"</span>
             </button>
           ))}
         </div>

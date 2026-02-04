@@ -16,7 +16,7 @@ mermaid.initialize({
   theme: 'default',
   securityLevel: 'loose',
   flowchart: {
-    useMaxWidth: true,
+    useMaxWidth: false,
     htmlLabels: true,
     curve: 'basis',
   },
@@ -56,7 +56,7 @@ export function MermaidDiagram({ code }: MermaidDiagramProps) {
   return (
     <div
       ref={containerRef}
-      className="flex items-center justify-center w-full overflow-auto [&>svg]:max-w-full"
+      className="w-full overflow-auto [&>svg]:mx-auto [&>svg]:block"
     />
   );
 }

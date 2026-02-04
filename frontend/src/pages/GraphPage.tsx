@@ -70,13 +70,15 @@ export function GraphPage() {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="flex-1 overflow-y-auto flex items-center justify-center p-8">
+      <main className="flex-1 overflow-y-auto p-8">
         {isLoading && (
-          <LoadingSpinner size="lg" text="워크플로우 그래프를 불러오는 중..." />
+          <div className="flex items-center justify-center h-full">
+            <LoadingSpinner size="lg" text="워크플로우 그래프를 불러오는 중..." />
+          </div>
         )}
 
         {error && (
-          <div className="max-w-md w-full">
+          <div className="max-w-md mx-auto">
             <ErrorMessage
               message="워크플로우 그래프를 불러올 수 없습니다."
               suggestion="서버 연결을 확인하고 다시 시도해주세요."
@@ -86,8 +88,72 @@ export function GraphPage() {
         )}
 
         {data && (
-          <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-            <MermaidDiagram code={data.mermaid} />
+          <div className="max-w-5xl mx-auto space-y-8">
+            {/* 다이어그램 */}
+            <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <MermaidDiagram code={data.mermaid} />
+            </div>
+
+            {/* 워크플로우 노드 설명 */}
+            <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">워크플로우 노드 설명</h2>
+              <div className="space-y-3">
+                {[
+                  {
+                    num: 1,
+                    name: 'schema_retrieval',
+                    desc: 'DB 스키마 조회 및 사용자 권한에 따른 테이블 필터링',
+                    color: 'bg-purple-100 text-purple-700',
+                  },
+                  {
+                    num: 2,
+                    name: 'permission_pre_check',
+                    desc: '사용자 질문이 접근 불가한 테이블을 필요로 하는지 사전 검증',
+                    color: 'bg-red-100 text-red-700',
+                  },
+                  {
+                    num: 3,
+                    name: 'query_generation',
+                    desc: '자연어 질문을 SQL 쿼리로 변환 (대화 맥락 지원)',
+                    color: 'bg-blue-100 text-blue-700',
+                  },
+                  {
+                    num: 4,
+                    name: 'query_validation',
+                    desc: '생성된 SQL의 3단계 검증 (키워드/스키마/시맨틱)',
+                    color: 'bg-amber-100 text-amber-700',
+                  },
+                  {
+                    num: 5,
+                    name: 'user_confirmation',
+                    desc: '사용자에게 생성된 쿼리 확인 요청 (Human-in-the-Loop)',
+                    color: 'bg-green-100 text-green-700',
+                  },
+                  {
+                    num: 6,
+                    name: 'query_execution',
+                    desc: '검증된 SQL 쿼리 실행 및 결과 반환',
+                    color: 'bg-cyan-100 text-cyan-700',
+                  },
+                  {
+                    num: 7,
+                    name: 'response_formatting',
+                    desc: '실행 결과를 사용자 친화적 메시지로 변환',
+                    color: 'bg-indigo-100 text-indigo-700',
+                  },
+                ].map((node) => (
+                  <div key={node.name} className="flex items-start gap-3">
+                    <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${node.color}`}>
+                      {node.num}
+                    </span>
+                    <div>
+                      <span className="font-mono text-sm font-semibold text-gray-900">{node.name}</span>
+                      <p className="text-sm text-gray-600 mt-0.5">{node.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </main>

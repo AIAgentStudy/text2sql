@@ -480,7 +480,7 @@ export function GuidePage() {
                   물류 운영 테이블 접근 가능
                 </p>
                 <p className="text-sm text-gray-600">
-                  창고, 상품, 주문, 배송, 매출 등 15개 테이블에 접근할 수
+                  창고, 상품, 주문, 배송, 매출 등 16개 테이블에 접근할 수
                   있습니다. 인증/권한 관련 테이블은 제외됩니다.
                 </p>
               </div>
@@ -489,10 +489,10 @@ export function GuidePage() {
                   Viewer
                 </p>
                 <p className="text-sm text-gray-700 mb-2">
-                  조회 전용 (5개 테이블)
+                  조회 전용 (6개 테이블)
                 </p>
                 <p className="text-sm text-gray-600">
-                  창고, 상품, 카테고리, 재고, 재고이력 테이블만 조회 가능합니다.
+                  창고, 창고구역, 상품, 카테고리, 재고, 재고이력 테이블만 조회 가능합니다.
                   주문·배송·매출 데이터는 접근할 수 없습니다.
                 </p>
               </div>

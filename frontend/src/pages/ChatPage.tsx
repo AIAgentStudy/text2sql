@@ -5,28 +5,33 @@
  * 좌측 채팅 사이드바 + 우측 결과 패널의 2패널 레이아웃을 사용합니다.
  */
 
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { ChatContainer } from '../components/Chat/ChatContainer';
-import { ResultsPanel } from '../components/Chat/ResultsPanel';
-import type { QueryResultData } from '../types';
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { ChatContainer } from "../components/Chat/ChatContainer";
+import { ResultsPanel } from "../components/Chat/ResultsPanel";
+import type { QueryResultData } from "../types";
 
 export function ChatPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [selectedResult, setSelectedResult] = useState<QueryResultData | null>(null);
+  const [selectedResult, setSelectedResult] = useState<QueryResultData | null>(
+    null,
+  );
   const [selectedQuery, setSelectedQuery] = useState<string | null>(null);
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
-  const handleSelectResult = useCallback((result: QueryResultData, query: string) => {
-    setSelectedResult(result);
-    setSelectedQuery(query);
-  }, []);
+  const handleSelectResult = useCallback(
+    (result: QueryResultData, query: string) => {
+      setSelectedResult(result);
+      setSelectedQuery(query);
+    },
+    [],
+  );
 
   return (
     <div className="h-screen bg-gradient-dark flex flex-col overflow-hidden">
@@ -37,34 +42,40 @@ export function ChatPage() {
         <div className="px-6 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gradient">Text2SQL Agent</h1>
-            <p className="text-sm text-content-secondary">자연어로 데이터베이스 질의하기</p>
+            <p className="text-sm text-content-secondary">
+              자연어로 데이터베이스 질의하기
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
-            {user?.roles.includes('viewer') && !user?.roles.includes('admin') && !user?.roles.includes('manager') && (
-              <span className="text-xs text-amber-400 px-2 py-1 rounded bg-amber-400/10 border border-amber-400/20">
-                Viewer 권한
-              </span>
-            )}
+            {user?.roles.includes("viewer") &&
+              !user?.roles.includes("admin") &&
+              !user?.roles.includes("manager") && (
+                <span className="text-xs text-amber-400 px-2 py-1 rounded bg-amber-400/10 border border-amber-400/20">
+                  Viewer 권한
+                </span>
+              )}
             {/* 사용자 정보 */}
             <div className="text-right">
-              <p className="text-sm font-medium text-content-primary">{user?.name}</p>
+              <p className="text-sm font-medium text-content-primary">
+                {user?.name}
+              </p>
               <p className="text-xs text-content-tertiary">
-                {user?.roles.join(', ')}
+                {user?.roles.join(", ")}
               </p>
             </div>
 
             {/* 워크플로우 그래프 버튼 */}
             <button
-              onClick={() => navigate('/graph')}
+              onClick={() => navigate("/graph")}
               className="px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-hover rounded-lg transition-all duration-200"
             >
-              그래프
+              노드 그래프
             </button>
 
             {/* 이용가이드 버튼 */}
             <button
-              onClick={() => navigate('/guide')}
+              onClick={() => navigate("/guide")}
               className="px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-hover rounded-lg transition-all duration-200"
             >
               이용가이드
