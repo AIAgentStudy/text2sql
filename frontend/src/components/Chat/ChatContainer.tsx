@@ -14,7 +14,7 @@ import type { LLMProvider, QueryResultData } from "../../types";
 
 const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openai", label: "OpenAI" },
-  { value: "anthropic", label: "Anthropic" },
+  // { value: "anthropic", label: "Anthropic" },
   { value: "google", label: "Google" },
 ];
 
