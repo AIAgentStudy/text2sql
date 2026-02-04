@@ -96,11 +96,10 @@ export interface ConfirmationResponse {
 
 export interface HealthDependencies {
   database: 'ok' | 'error';
-  llm: 'ok' | 'error';
 }
 
 export interface HealthResponse {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: 'healthy' | 'unhealthy';
   timestamp: string;
   dependencies?: HealthDependencies | null;
 }

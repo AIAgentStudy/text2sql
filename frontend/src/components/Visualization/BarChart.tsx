@@ -29,7 +29,7 @@ export function BarChartComponent({ data, xAxisKey, yAxisKeys }: BarChartProps) 
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={data}
-        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+        margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(0, 0, 0, 0.1)" />
         <XAxis
