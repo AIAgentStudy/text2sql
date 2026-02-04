@@ -208,3 +208,5 @@ memory/
 scripts/
 templates/
 specs/
+
+claude.md
