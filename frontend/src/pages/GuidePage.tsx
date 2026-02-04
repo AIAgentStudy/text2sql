@@ -93,6 +93,12 @@ export function GuidePage() {
               채팅으로 돌아가기
             </button>
             <button
+              onClick={() => navigate("/graph")}
+              className="px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-hover rounded-lg transition-all duration-200"
+            >
+              그래프
+            </button>
+            <button
               onClick={handleLogout}
               className="px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-hover rounded-lg transition-all duration-200"
             >

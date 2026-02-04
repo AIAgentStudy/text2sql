@@ -54,6 +54,14 @@ export function ChatPage() {
               </p>
             </div>
 
+            {/* 워크플로우 그래프 버튼 */}
+            <button
+              onClick={() => navigate('/graph')}
+              className="px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary hover:bg-surface-hover rounded-lg transition-all duration-200"
+            >
+              그래프
+            </button>
+
             {/* 이용가이드 버튼 */}
             <button
               onClick={() => navigate('/guide')}

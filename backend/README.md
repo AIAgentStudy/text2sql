@@ -26,6 +26,7 @@ backend/
 │   │   ├── state.py        # 에이전트 상태
 │   │   └── nodes/          # 워크플로우 노드
 │   │       ├── schema_retrieval.py
+│   │       ├── permission_pre_check.py
 │   │       ├── query_generation.py
 │   │       ├── query_validation.py
 │   │       ├── user_confirmation.py
@@ -192,6 +193,12 @@ data: {"type": "done", "awaiting_confirmation": false}
 ┌─────────────────┐
 │  Schema         │ 데이터베이스 스키마 조회
 │  Retrieval      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Permission     │ 사전 권한 검증
+│  Pre-check      │ (접근 불가 테이블 조기 차단)
 └────────┬────────┘
          │
          ▼

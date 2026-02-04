@@ -304,6 +304,15 @@ export async function refreshSchema(): Promise<DatabaseSchema> {
   });
 }
 
+// === 그래프 API ===
+
+/**
+ * LangGraph 워크플로우 Mermaid 다이어그램 조회
+ */
+export async function getGraphMermaid(): Promise<{ mermaid: string }> {
+  return fetchApi<{ mermaid: string }>('/api/graph/mermaid');
+}
+
 // === 헬스체크 API ===
 
 /**
@@ -331,6 +340,9 @@ export const api = {
   // 스키마
   getSchema,
   refreshSchema,
+
+  // 그래프
+  getGraphMermaid,
 
   // 헬스체크
   checkHealth,
