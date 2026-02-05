@@ -151,13 +151,18 @@ def add_message_to_session(
 
 def terminate_session(session_id: str) -> None:
     """
-    세션 종료
+    세션 종료 (체크포인트 포함)
 
     Args:
         session_id: 세션 ID
     """
     if session_id in _sessions:
         _sessions[session_id].status = SessionStatus.TERMINATED
+        # 체크포인트도 함께 삭제
+        try:
+            _checkpointer.delete_thread(session_id)
+        except Exception as e:
+            logger.warning(f"체크포인트 삭제 실패 ({session_id}): {e}")
         logger.info(f"세션 종료: {session_id}")
 
 
@@ -210,7 +215,7 @@ def _is_session_expired(session: ConversationSession) -> bool:
 
 def cleanup_expired_sessions() -> int:
     """
-    만료된 세션 정리
+    만료된 세션 정리 (세션 데이터 + 체크포인트)
 
     Returns:
         정리된 세션 수
@@ -223,8 +228,13 @@ def cleanup_expired_sessions() -> int:
 
     for sid in expired_ids:
         del _sessions[sid]
+        # MemorySaver 체크포인트 정리 추가
+        try:
+            _checkpointer.delete_thread(sid)
+        except Exception as e:
+            logger.warning(f"체크포인트 삭제 실패 ({sid}): {e}")
 
     if expired_ids:
-        logger.info(f"만료 세션 정리: {len(expired_ids)}개")
+        logger.info(f"만료 세션 정리: {len(expired_ids)}개 (세션 + 체크포인트)")
 
     return len(expired_ids)

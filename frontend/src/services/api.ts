@@ -124,6 +124,7 @@ export async function streamChat(
   signal?: AbortSignal
 ): Promise<void> {
   const url = `${API_BASE_URL}/api/chat`;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
     let response = await fetch(url, {
@@ -169,7 +170,7 @@ export async function streamChat(
       );
     }
 
-    const reader = response.body?.getReader();
+    reader = response.body?.getReader() ?? null;
     if (!reader) {
       throw new ApiError('STREAM_ERROR', '응답 스트림을 읽을 수 없습니다.');
     }
@@ -232,13 +233,29 @@ export async function streamChat(
     }
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        // 사용자가 취소한 경우
+        // 사용자가 취소한 경우 - reader 정리
+        if (reader) {
+          try {
+            await reader.cancel();
+          } catch {
+            // cancel 실패 무시
+          }
+        }
         return;
       }
       handlers.onConnectionError?.(error);
       throw new ApiError('CONNECTION_ERROR', `연결 오류: ${error.message}`);
     }
     throw error;
+  } finally {
+    // reader 정리
+    if (reader) {
+      try {
+        reader.releaseLock();
+      } catch {
+        // releaseLock 실패 무시
+      }
+    }
   }
 }
 
