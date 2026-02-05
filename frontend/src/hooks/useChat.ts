@@ -5,7 +5,7 @@
  * 메시지 전송, 쿼리 확인, 상태 관리를 담당합니다.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
@@ -81,6 +81,16 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   if (sessionId !== currentSessionIdRef.current) {
     currentSessionIdRef.current = sessionId || null;
   }
+
+  // 컴포넌트 언마운트 시 진행 중인 요청 정리
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   /**
    * 메시지 추가

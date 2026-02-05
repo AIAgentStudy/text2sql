@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import asyncio
 import logging
 import time
 import uuid
@@ -22,8 +23,27 @@ from app.config import get_settings, setup_logging
 from app.database.connection import close_pool, create_pool
 from app.database.schema import get_database_schema
 from app.errors.handlers import register_error_handlers
+from app.session.manager import cleanup_expired_sessions
 
 logger = logging.getLogger(__name__)
+
+# 백그라운드 태스크 참조
+_cleanup_task: asyncio.Task | None = None
+
+
+async def periodic_session_cleanup(interval_seconds: int = 600):
+    """주기적 세션 정리 태스크 (기본 10분 간격)"""
+    while True:
+        try:
+            await asyncio.sleep(interval_seconds)
+            cleaned = cleanup_expired_sessions()
+            if cleaned > 0:
+                logger.info(f"주기적 세션 정리 완료: {cleaned}개")
+        except asyncio.CancelledError:
+            logger.info("세션 정리 태스크 종료")
+            break
+        except Exception as e:
+            logger.error(f"세션 정리 중 오류: {e}")
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
@@ -78,6 +98,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """애플리케이션 수명 주기 관리"""
+    global _cleanup_task
+
     # 시작 시
     settings = get_settings()
 
@@ -92,7 +114,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
         os.environ["LANGCHAIN_ENDPOINT"] = settings.langsmith_endpoint
         os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
-        logger.info(f"LangSmith 트레이싱 활성화 - 프로젝트: {settings.langsmith_project}")
+        logger.info(
+            f"LangSmith 트레이싱 활성화 - 프로젝트: {settings.langsmith_project}"
+        )
     else:
         logger.info("LangSmith 트레이싱 비활성화")
 
@@ -113,10 +137,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.warning(f"스키마 미리 로드 실패 (첫 요청 시 재시도됨): {e}")
 
+    # 백그라운드 세션 정리 태스크 시작
+    _cleanup_task = asyncio.create_task(periodic_session_cleanup(300))
+    logger.info("세션 정리 백그라운드 태스크 시작")
+
     yield
 
     # 종료 시
     logger.info("Text2SQL Agent 서버 종료 중...")
+
+    # 백그라운드 태스크 취소
+    if _cleanup_task and not _cleanup_task.done():
+        _cleanup_task.cancel()
+        try:
+            await _cleanup_task
+        except asyncio.CancelledError:
+            pass
+
+    # 종료 전 마지막 정리
+    cleanup_expired_sessions()
+
     await close_pool()
     logger.info("서버 종료 완료")
 
