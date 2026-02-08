@@ -9,6 +9,7 @@ import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from app.agent.decorators import with_debug_timing
 from app.agent.state import Text2SQLAgentState
 from app.database.schema import get_database_schema
 from app.llm.factory import get_fast_model
@@ -43,6 +44,7 @@ def _format_table_list(table_names: list[str], table_descriptions: dict[str, str
     return "\n".join(lines) if lines else "(없음)"
 
 
+@with_debug_timing("permission_pre_check")
 async def permission_pre_check_node(state: Text2SQLAgentState) -> dict[str, object]:
     """
     권한 사전 검사 노드
@@ -56,8 +58,9 @@ async def permission_pre_check_node(state: Text2SQLAgentState) -> dict[str, obje
     Returns:
         업데이트할 상태 딕셔너리
     """
-    user_roles = state.get("user_roles", [])
-    accessible_tables = state.get("accessible_tables", [])
+    # Nested 구조에서 값 추출
+    user_roles = state["auth"]["user_roles"]
+    accessible_tables = state["auth"]["accessible_tables"]
 
     # admin은 모든 테이블 접근 가능 → 스킵
     if "admin" in user_roles:
@@ -102,10 +105,10 @@ async def permission_pre_check_node(state: Text2SQLAgentState) -> dict[str, obje
             ),
         )
 
-        user_question = state.get("user_question", "")
+        user_question = state["input"]["user_question"]
 
         # fast model로 권한 체크
-        llm_provider = state.get("llm_provider", "openai")
+        llm_provider = state["input"]["llm_provider"]
         llm = get_fast_model(provider_type=llm_provider)
 
         response = await llm.ainvoke([
@@ -122,7 +125,9 @@ async def permission_pre_check_node(state: Text2SQLAgentState) -> dict[str, obje
                 f"roles={user_roles}, question={user_question[:100]}"
             )
             return {
-                "execution_error": "해당 데이터에 대한 접근 권한이 없습니다. 관리자에게 문의하세요.",
+                "execution": {
+                    "execution_error": "해당 데이터에 대한 접근 권한이 없습니다. 관리자에게 문의하세요.",
+                },
             }
 
         # NO 또는 기타 응답 → 통과

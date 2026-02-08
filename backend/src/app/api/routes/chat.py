@@ -44,6 +44,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _get_nested_value(state: dict, *keys, default=None):
+    """Nested dict에서 안전하게 값 추출"""
+    current = state
+    for key in keys:
+        if isinstance(current, dict):
+            current = current.get(key)
+        else:
+            return default
+        if current is None:
+            return default
+    return current
+
+
 @router.post(
     "/chat",
     summary="새로운 질문 전송",
@@ -135,14 +148,14 @@ async def chat_endpoint(
 
                     final_state = node_output
 
-                    # query_id 추적 (어느 노드에서든 설정되면 저장)
-                    if node_output.get("query_id"):
-                        current_query_id = node_output.get("query_id")
+                    # query_id 추적 - nested 구조에서
+                    query_id = _get_nested_value(node_output, "generation", "query_id")
+                    if query_id:
+                        current_query_id = query_id
 
                     # 쿼리 생성 완료 시
-                    if node_name == "query_generation" and node_output.get(
-                        "generated_query"
-                    ):
+                    generated_query = _get_nested_value(node_output, "generation", "generated_query")
+                    if node_name == "query_generation" and generated_query:
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.VALIDATING,
@@ -151,15 +164,14 @@ async def chat_endpoint(
                         )
                         yield _format_sse_event(
                             QueryPreviewEvent(
-                                query=node_output.get("generated_query", ""),
-                                explanation=node_output.get("query_explanation", ""),
+                                query=generated_query,
+                                explanation=_get_nested_value(node_output, "generation", "query_explanation", default=""),
                             )
                         )
 
                     # 검증 완료 시
-                    if node_name == "query_validation" and node_output.get(
-                        "is_query_valid"
-                    ):
+                    is_query_valid = _get_nested_value(node_output, "validation", "is_query_valid")
+                    if node_name == "query_validation" and is_query_valid:
                         yield _format_sse_event(
                             StatusEvent(
                                 status=QueryRequestStatus.AWAITING_CONFIRM,
@@ -184,10 +196,15 @@ async def chat_endpoint(
 
             # 최종 결과 전송
             if final_state:
-                if final_state.get("execution_error") or final_state.get("response_format") == "error":
+                # Nested 구조에서 값 추출
+                execution_error = _get_nested_value(final_state, "execution", "execution_error")
+                response_format = _get_nested_value(final_state, "response", "response_format")
+                final_response = _get_nested_value(final_state, "response", "final_response")
+
+                if execution_error or response_format == "error":
                     error_message = (
-                        final_state.get("execution_error")
-                        or final_state.get("final_response")
+                        execution_error
+                        or final_response
                         or "요청을 처리하는 중 오류가 발생했습니다."
                     )
                     yield _format_sse_event(
@@ -200,8 +217,8 @@ async def chat_endpoint(
                     )
                 else:
                     # 결과 이벤트
-                    rows = final_state.get("query_result", [])
-                    columns = final_state.get("result_columns", [])
+                    rows = _get_nested_value(final_state, "execution", "query_result", default=[])
+                    columns = _get_nested_value(final_state, "execution", "result_columns", default=[])
 
                     column_infos = [
                         ColumnInfo(
@@ -215,13 +232,13 @@ async def chat_endpoint(
                         ResultEvent(
                             data=QueryResultData(
                                 rows=rows,
-                                total_row_count=final_state.get("total_row_count", 0),
+                                total_row_count=_get_nested_value(final_state, "execution", "total_row_count", default=0),
                                 returned_row_count=len(rows),
                                 columns=column_infos,
                                 is_truncated=len(rows)
-                                < final_state.get("total_row_count", 0),
-                                execution_time_ms=final_state.get(
-                                    "execution_time_ms", 0
+                                < _get_nested_value(final_state, "execution", "total_row_count", default=0),
+                                execution_time_ms=_get_nested_value(
+                                    final_state, "execution", "execution_time_ms", default=0
                                 ),
                             )
                         )
@@ -231,7 +248,7 @@ async def chat_endpoint(
                     add_message_to_session(
                         session_id,
                         "assistant",
-                        final_state.get("final_response", ""),
+                        final_response or "",
                     )
 
             # 완료 이벤트
@@ -327,7 +344,11 @@ async def confirm_query(
 
         # 현재 사용자의 권한으로 쿼리 재검증
         graph_state = await graph.aget_state(config)
-        generated_query = graph_state.values.get("generated_query", "") if graph_state.values else ""
+        # Nested 구조에서 generated_query 추출
+        generated_query = ""
+        if graph_state.values:
+            generated_query = _get_nested_value(graph_state.values, "generation", "generated_query", default="")
+
         if generated_query:
             from app.auth.permissions import validate_query_permission
 
@@ -359,17 +380,19 @@ async def confirm_query(
 
         # 결과 반환
         if final_state:
-            if final_state.get("execution_error"):
+            # Nested 구조에서 값 추출
+            execution_error = _get_nested_value(final_state, "execution", "execution_error")
+            if execution_error:
                 return ConfirmationResponse(
                     success=False,
                     result=None,
                     error=ErrorDetail(
                         code="EXECUTION_ERROR",
-                        message=final_state.get("execution_error", ""),
+                        message=execution_error,
                     ),
                 )
 
-            result_columns = final_state.get("result_columns", [])
+            result_columns = _get_nested_value(final_state, "execution", "result_columns", default=[])
             column_infos = [
                 ColumnInfo(
                     name=col["name"] if isinstance(col, dict) else col,
@@ -378,15 +401,16 @@ async def confirm_query(
                 )
                 for col in result_columns
             ]
+            query_result = _get_nested_value(final_state, "execution", "query_result", default=[])
             return ConfirmationResponse(
                 success=True,
                 result=QueryResultData(
-                    rows=final_state.get("query_result", []),
-                    total_row_count=final_state.get("total_row_count", 0),
-                    returned_row_count=len(final_state.get("query_result", [])),
+                    rows=query_result,
+                    total_row_count=_get_nested_value(final_state, "execution", "total_row_count", default=0),
+                    returned_row_count=len(query_result),
                     columns=column_infos,
                     is_truncated=False,
-                    execution_time_ms=final_state.get("execution_time_ms", 0),
+                    execution_time_ms=_get_nested_value(final_state, "execution", "execution_time_ms", default=0),
                 ),
                 error=None,
             )
