@@ -80,7 +80,7 @@ async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, objec
     # 테이블 형식 응답
     rows = state["execution"]["query_result"]
     raw_columns = state["execution"]["result_columns"]
-    columns = [col["name"] if isinstance(col, dict) else col for col in raw_columns]
+    columns = [col["name"] if isinstance(col, dict) else col for col in (raw_columns or [])]
     execution_time = state["execution"]["execution_time_ms"]
 
     return {
@@ -179,7 +179,9 @@ def _format_table_response(
 ) -> str:
     """테이블 형식 응답 포맷팅"""
     # 결과 요약
-    summary = f"조회 완료! {total_count:,}건의 데이터를 찾았습니다. ({execution_time}ms)"
+    summary = (
+        f"조회 완료! {total_count:,}건의 데이터를 찾았습니다. ({execution_time}ms)"
+    )
 
     # 마크다운 테이블 생성 (최대 10행만 미리보기)
     preview_rows = rows[:10]

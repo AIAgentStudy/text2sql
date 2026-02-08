@@ -26,8 +26,9 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
     Returns:
         업데이트할 상태 딕셔너리
     """
-    # Nested 구조에서 값 추출
-    query = state["generation"]["generated_query"]
+    # Nested 구조에서 값 추출 (방어적 접근)
+    generation = state.get("generation", {})
+    query = generation.get("generated_query", "")
 
     if not query:
         logger.warning("실행할 쿼리가 없습니다")
@@ -41,7 +42,8 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
         }
 
     # 최종 권한 체크 (defense-in-depth)
-    accessible_tables = state["auth"]["accessible_tables"]
+    auth = state.get("auth", {})
+    accessible_tables = auth.get("accessible_tables", [])
     if accessible_tables:
         from app.auth.permissions import extract_tables_from_query
 
@@ -51,9 +53,7 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
             t for t in referenced_tables if t.lower() not in accessible_lower
         ]
         if unauthorized:
-            logger.warning(
-                f"실행 단계에서 권한 없는 테이블 접근 차단: {unauthorized}"
-            )
+            logger.warning(f"실행 단계에서 권한 없는 테이블 접근 차단: {unauthorized}")
             return {
                 "execution": {
                     "query_result": [],
@@ -76,15 +76,17 @@ async def query_execution_node(state: Text2SQLAgentState) -> dict[str, object]:
         # 결과 처리
         rows = result.rows
         columns = [
-            {"name": col.name, "data_type": col.data_type, "is_nullable": col.is_nullable}
+            {
+                "name": col.name,
+                "data_type": col.data_type,
+                "is_nullable": col.is_nullable,
+            }
             for col in result.columns
         ]
         total_count = result.total_row_count
         execution_time = result.execution_time_ms
 
-        logger.info(
-            f"쿼리 실행 완료 - {total_count}행, {execution_time}ms"
-        )
+        logger.info(f"쿼리 실행 완료 - {total_count}행, {execution_time}ms")
 
         # 결과 형식 결정
         if total_count == 0:

@@ -318,8 +318,8 @@ def merge_debug_update(
     """
     return DebugContext(
         trace_id=update.get("trace_id", current_debug["trace_id"]),
-        node_timings=current_debug["node_timings"] + update.get("node_timings", []),
-        error_chain=current_debug["error_chain"] + update.get("error_chain", []),
+        node_timings=current_debug["node_timings"] + (update.get("node_timings") or []),
+        error_chain=current_debug["error_chain"] + (update.get("error_chain") or []),
         current_node=update.get("current_node", current_debug["current_node"]),
-        retry_history=current_debug["retry_history"] + update.get("retry_history", []),
+        retry_history=current_debug["retry_history"] + (update.get("retry_history") or []),
     )

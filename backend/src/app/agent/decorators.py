@@ -12,7 +12,6 @@ from typing import Any, Callable
 
 from app.agent.state import (
     DebugContext,
-    ErrorEntry,
     NodeTiming,
     Text2SQLAgentState,
 )
@@ -131,72 +130,13 @@ def _add_timing_to_result(
             trace_id=current_debug.get("trace_id", ""),
             node_timings=existing_timings,
             error_chain=current_debug.get("error_chain", []),
-            current_node="",
+            current_node=current_debug.get("current_node", ""),
             retry_history=current_debug.get("retry_history", []),
-        )
-
-        # 결과에 debug 업데이트 추가
+        )  # 결과에 debug 업데이트 추가
         result["debug"] = debug_update
 
     except (KeyError, TypeError, AttributeError) as e:
         logger.warning(f"Failed to add timing info: {e}")
-
-    return result
-
-
-def _create_error_result(
-    state: Text2SQLAgentState,
-    node_name: str,
-    error: Exception,
-    start_time: float,
-    end_time: float,
-    duration_ms: float,
-) -> dict[str, Any]:
-    """에러 발생 시 결과 생성"""
-    result = {}
-
-    try:
-        current_debug = state.get("debug", {})
-        if not current_debug:
-            return result
-
-        # 타이밍 항목
-        new_timing = NodeTiming(
-            node_name=node_name,
-            start_time=start_time,
-            end_time=end_time,
-            duration_ms=duration_ms,
-        )
-
-        # 에러 항목
-        error_entry = ErrorEntry(
-            node_name=node_name,
-            error_type=type(error).__name__,
-            error_message=str(error),
-            timestamp=end_time,
-            context={},
-        )
-
-        # 기존 목록에 추가
-        existing_timings = list(current_debug.get("node_timings", []))
-        existing_timings.append(new_timing)
-
-        existing_errors = list(current_debug.get("error_chain", []))
-        existing_errors.append(error_entry)
-
-        # debug 업데이트 생성
-        debug_update = DebugContext(
-            trace_id=current_debug.get("trace_id", ""),
-            node_timings=existing_timings,
-            error_chain=existing_errors,
-            current_node=node_name,
-            retry_history=current_debug.get("retry_history", []),
-        )
-
-        result["debug"] = debug_update
-
-    except (KeyError, TypeError, AttributeError) as e:
-        logger.warning(f"Failed to create error result: {e}")
 
     return result
 
