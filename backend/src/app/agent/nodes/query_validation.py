@@ -78,9 +78,7 @@ async def validate_query_pipeline(
     keyword_result = keyword_validator.validate(query)
 
     if not keyword_result.is_valid:
-        logger.warning(
-            f"키워드 검증 실패: {keyword_result.detected_keywords}"
-        )
+        logger.warning(f"키워드 검증 실패: {keyword_result.detected_keywords}")
         return ValidationPipelineResult(
             is_valid=False,
             blocked_at_layer="keyword",
@@ -219,9 +217,7 @@ async def query_validation_node(
                     t for t in referenced_tables if t.lower() not in accessible_lower
                 ]
                 if unauthorized:
-                    logger.warning(
-                        f"권한 없는 테이블 접근 시도: {unauthorized}"
-                    )
+                    logger.warning(f"권한 없는 테이블 접근 시도: {unauthorized}")
                     return {
                         "validation": {
                             "is_query_valid": False,
@@ -254,9 +250,7 @@ async def query_validation_node(
                         f"오류: {result.details}"
                     )
                 elif result.blocked_at_layer == "semantic":
-                    error_messages.append(
-                        "힌트: 더 간단하고 명확한 쿼리를 생성하세요."
-                    )
+                    error_messages.append("힌트: 더 간단하고 명확한 쿼리를 생성하세요.")
 
             return {
                 "validation": {
@@ -287,6 +281,9 @@ async def query_validation_node(
                 "is_query_valid": False,
                 "validation_errors": [e.user_message],
             },
+            "generation": {
+                "generation_attempt": generation_attempt + 1,
+            },
         }
 
     except Exception as e:
@@ -297,6 +294,9 @@ async def query_validation_node(
                 "validation_errors": [
                     "쿼리 검증 중 문제가 발생했습니다. 다시 시도해주세요."
                 ],
+            },
+            "generation": {
+                "generation_attempt": generation_attempt + 1,
             },
         }
 

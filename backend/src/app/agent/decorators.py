@@ -80,7 +80,7 @@ def with_debug_timing(node_name: str) -> Callable:
                 return result
 
             except Exception as e:
-                # 에러 발생 시 타이밍 및 에러 정보 기록
+                # 에러 발생 시 타이밍 정보 기록
                 end_time = time.time()
                 duration_ms = (end_time - start_time) * 1000
 
@@ -88,18 +88,7 @@ def with_debug_timing(node_name: str) -> Callable:
                     f"[{trace_id}] Node '{node_name}' failed after {duration_ms:.2f}ms: {e}"
                 )
 
-                # 에러 정보를 포함한 결과 생성
-                error_result = _create_error_result(
-                    state=state,
-                    node_name=node_name,
-                    error=e,
-                    start_time=start_time,
-                    end_time=end_time,
-                    duration_ms=duration_ms,
-                )
-
-                # 예외를 다시 발생시키지 않고 에러 상태 반환
-                # (LangGraph가 에러 처리를 하도록 함)
+                # Re-raise to let LangGraph handle the error
                 raise
 
         return wrapper
@@ -231,7 +220,9 @@ def with_retry_tracking(node_name: str) -> Callable:
         async def wrapper(state: Text2SQLAgentState) -> dict[str, Any]:
             # 현재 시도 횟수 추출
             try:
-                current_attempt = state.get("generation", {}).get("generation_attempt", 0)
+                current_attempt = state.get("generation", {}).get(
+                    "generation_attempt", 0
+                )
             except (KeyError, TypeError, AttributeError):
                 current_attempt = 0
 

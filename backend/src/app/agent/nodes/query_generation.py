@@ -66,6 +66,66 @@ INNER JOIN orders o ON o.id = oi.order_id
 WHERE o.order_date >= DATE_TRUNC('month', CURRENT_DATE)
 GROUP BY p.id, p.name ORDER BY "판매수량" DESC LIMIT 5;
 ```
+
+질문: "카테고리별 매출 비중"
+```sql
+WITH category_sales AS (
+    SELECT c.name AS category, COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS sales
+    FROM categories c
+    LEFT JOIN products p ON p.category_id = c.id
+    LEFT JOIN order_items oi ON oi.product_id = p.id
+    GROUP BY c.id, c.name
+),
+total AS (
+    SELECT SUM(sales) AS total_sales FROM category_sales
+)
+SELECT cs.category AS "카테고리",
+       cs.sales AS "매출액",
+       ROUND(cs.sales * 100.0 / NULLIF(t.total_sales, 0), 2) AS "비중(%)"
+FROM category_sales cs CROSS JOIN total t
+ORDER BY cs.sales DESC;
+```
+
+질문: "월별 매출 증감률"
+```sql
+WITH monthly_sales AS (
+    SELECT DATE_TRUNC('month', order_date) AS month,
+           COALESCE(SUM(amount), 0) AS sales
+    FROM orders
+    WHERE order_date >= DATE_TRUNC('year', CURRENT_DATE)
+    GROUP BY DATE_TRUNC('month', order_date)
+)
+SELECT TO_CHAR(month, 'YYYY-MM') AS "월",
+       sales AS "매출액",
+       LAG(sales) OVER (ORDER BY month) AS "전월매출",
+       ROUND((sales - LAG(sales) OVER (ORDER BY month)) * 100.0
+             / NULLIF(LAG(sales) OVER (ORDER BY month), 0), 2) AS "증감률(%)"
+FROM monthly_sales
+ORDER BY month;
+```
+
+질문: "고객별 매출 순위와 누적 비율"
+```sql
+WITH customer_sales AS (
+    SELECT c.name AS customer, COALESCE(SUM(o.amount), 0) AS sales
+    FROM customers c LEFT JOIN orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name
+),
+ranked AS (
+    SELECT customer, sales,
+           RANK() OVER (ORDER BY sales DESC) AS rank,
+           SUM(sales) OVER () AS total_sales,
+           SUM(sales) OVER (ORDER BY sales DESC) AS cumulative_sales
+    FROM customer_sales
+)
+SELECT customer AS "고객",
+       sales AS "매출액",
+       rank AS "순위",
+       ROUND(cumulative_sales * 100.0 / NULLIF(total_sales, 0), 2) AS "누적비율(%)"
+FROM ranked
+WHERE sales > 0
+ORDER BY rank LIMIT 10;
+```
 """
 
 SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
@@ -85,6 +145,14 @@ SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
 10. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
 11. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
 12. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+13. 비율, 비중, 점유율 계산 시 CTE(WITH 절)를 사용하세요.
+    - 전체 합계를 먼저 계산한 뒤 CROSS JOIN으로 비율 산출
+    - 0 나누기 방지: ROUND(value * 100.0 / NULLIF(total, 0), 2)
+14. 증감률, 전월/전년 대비 계산 시 윈도우 함수 LAG를 사용하세요.
+    - LAG(column) OVER (ORDER BY date_column)
+15. 순위, 누적합, 이동평균 등 분석 시 윈도우 함수를 적극 활용하세요.
+    - RANK(), ROW_NUMBER(), SUM() OVER(), AVG() OVER()
+16. 복잡한 서브쿼리가 2개 이상 필요한 경우 CTE로 분리하여 가독성을 높이세요.
 
 {few_shot_examples}
 
@@ -126,6 +194,14 @@ CONTEXT_AWARE_SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문�
 9. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
 10. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
 11. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+12. 비율, 비중, 점유율 계산 시 CTE(WITH 절)를 사용하세요.
+    - 전체 합계를 먼저 계산한 뒤 CROSS JOIN으로 비율 산출
+    - 0 나누기 방지: ROUND(value * 100.0 / NULLIF(total, 0), 2)
+13. 증감률, 전월/전년 대비 계산 시 윈도우 함수 LAG를 사용하세요.
+    - LAG(column) OVER (ORDER BY date_column)
+14. 순위, 누적합, 이동평균 등 분석 시 윈도우 함수를 적극 활용하세요.
+    - RANK(), ROW_NUMBER(), SUM() OVER(), AVG() OVER()
+15. 복잡한 서브쿼리가 2개 이상 필요한 경우 CTE로 분리하여 가독성을 높이세요.
 
 {few_shot_examples}
 
@@ -294,9 +370,7 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
             },
         }
 
-    logger.info(
-        f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
-    )
+    logger.info(f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})")
 
     # 리셋 명령어 확인
     if is_reset_command(user_question):
@@ -355,12 +429,13 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         return {
             "generation": {
                 "generation_attempt": attempt,
+                "generated_query": "",
+                "query_explanation": "",
             },
             "execution": {
                 "execution_error": "쿼리를 생성할 수 없습니다. 질문을 다시 확인해주세요.",
             },
         }
-
     try:
         # LLM 모델 가져오기 (state에서 선택한 provider 사용)
         llm_provider = state["input"]["llm_provider"]

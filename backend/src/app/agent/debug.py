@@ -307,6 +307,7 @@ def merge_debug_update(
     디버그 컨텍스트 업데이트 병합
 
     노드에서 반환된 부분 업데이트를 현재 디버그 컨텍스트에 병합합니다.
+    리스트 필드(node_timings, error_chain, retry_history)는 기존 값에 새 값을 추가합니다.
 
     Args:
         current_debug: 현재 디버그 컨텍스트
@@ -317,8 +318,8 @@ def merge_debug_update(
     """
     return DebugContext(
         trace_id=update.get("trace_id", current_debug["trace_id"]),
-        node_timings=update.get("node_timings", current_debug["node_timings"]),
-        error_chain=update.get("error_chain", current_debug["error_chain"]),
+        node_timings=current_debug["node_timings"] + update.get("node_timings", []),
+        error_chain=current_debug["error_chain"] + update.get("error_chain", []),
         current_node=update.get("current_node", current_debug["current_node"]),
-        retry_history=update.get("retry_history", current_debug["retry_history"]),
+        retry_history=current_debug["retry_history"] + update.get("retry_history", []),
     )

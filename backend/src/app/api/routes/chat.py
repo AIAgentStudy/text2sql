@@ -154,7 +154,9 @@ async def chat_endpoint(
                         current_query_id = query_id
 
                     # 쿼리 생성 완료 시
-                    generated_query = _get_nested_value(node_output, "generation", "generated_query")
+                    generated_query = _get_nested_value(
+                        node_output, "generation", "generated_query"
+                    )
                     if node_name == "query_generation" and generated_query:
                         yield _format_sse_event(
                             StatusEvent(
@@ -165,12 +167,19 @@ async def chat_endpoint(
                         yield _format_sse_event(
                             QueryPreviewEvent(
                                 query=generated_query,
-                                explanation=_get_nested_value(node_output, "generation", "query_explanation", default=""),
+                                explanation=_get_nested_value(
+                                    node_output,
+                                    "generation",
+                                    "query_explanation",
+                                    default="",
+                                ),
                             )
                         )
 
                     # 검증 완료 시
-                    is_query_valid = _get_nested_value(node_output, "validation", "is_query_valid")
+                    is_query_valid = _get_nested_value(
+                        node_output, "validation", "is_query_valid"
+                    )
                     if node_name == "query_validation" and is_query_valid:
                         yield _format_sse_event(
                             StatusEvent(
@@ -197,9 +206,15 @@ async def chat_endpoint(
             # 최종 결과 전송
             if final_state:
                 # Nested 구조에서 값 추출
-                execution_error = _get_nested_value(final_state, "execution", "execution_error")
-                response_format = _get_nested_value(final_state, "response", "response_format")
-                final_response = _get_nested_value(final_state, "response", "final_response")
+                execution_error = _get_nested_value(
+                    final_state, "execution", "execution_error"
+                )
+                response_format = _get_nested_value(
+                    final_state, "response", "response_format"
+                )
+                final_response = _get_nested_value(
+                    final_state, "response", "final_response"
+                )
 
                 if execution_error or response_format == "error":
                     error_message = (
@@ -217,14 +232,26 @@ async def chat_endpoint(
                     )
                 else:
                     # 결과 이벤트
-                    rows = _get_nested_value(final_state, "execution", "query_result", default=[])
-                    columns = _get_nested_value(final_state, "execution", "result_columns", default=[])
+                    rows = _get_nested_value(
+                        final_state, "execution", "query_result", default=[]
+                    )
+                    columns = _get_nested_value(
+                        final_state, "execution", "result_columns", default=[]
+                    )
 
                     column_infos = [
                         ColumnInfo(
                             name=col["name"] if isinstance(col, dict) else col,
-                            data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
-                            is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                            data_type=(
+                                col.get("data_type", "unknown")
+                                if isinstance(col, dict)
+                                else "unknown"
+                            ),
+                            is_nullable=(
+                                col.get("is_nullable", True)
+                                if isinstance(col, dict)
+                                else True
+                            ),
                         )
                         for col in columns
                     ]
@@ -232,13 +259,26 @@ async def chat_endpoint(
                         ResultEvent(
                             data=QueryResultData(
                                 rows=rows,
-                                total_row_count=_get_nested_value(final_state, "execution", "total_row_count", default=0),
+                                total_row_count=_get_nested_value(
+                                    final_state,
+                                    "execution",
+                                    "total_row_count",
+                                    default=0,
+                                ),
                                 returned_row_count=len(rows),
                                 columns=column_infos,
                                 is_truncated=len(rows)
-                                < _get_nested_value(final_state, "execution", "total_row_count", default=0),
+                                < _get_nested_value(
+                                    final_state,
+                                    "execution",
+                                    "total_row_count",
+                                    default=0,
+                                ),
                                 execution_time_ms=_get_nested_value(
-                                    final_state, "execution", "execution_time_ms", default=0
+                                    final_state,
+                                    "execution",
+                                    "execution_time_ms",
+                                    default=0,
                                 ),
                             )
                         )
@@ -347,7 +387,9 @@ async def confirm_query(
         # Nested 구조에서 generated_query 추출
         generated_query = ""
         if graph_state.values:
-            generated_query = _get_nested_value(graph_state.values, "generation", "generated_query", default="")
+            generated_query = _get_nested_value(
+                graph_state.values, "generation", "generated_query", default=""
+            )
 
         if generated_query:
             from app.auth.permissions import validate_query_permission
@@ -381,7 +423,9 @@ async def confirm_query(
         # 결과 반환
         if final_state:
             # Nested 구조에서 값 추출
-            execution_error = _get_nested_value(final_state, "execution", "execution_error")
+            execution_error = _get_nested_value(
+                final_state, "execution", "execution_error"
+            )
             if execution_error:
                 return ConfirmationResponse(
                     success=False,
@@ -392,25 +436,40 @@ async def confirm_query(
                     ),
                 )
 
-            result_columns = _get_nested_value(final_state, "execution", "result_columns", default=[])
+            result_columns = _get_nested_value(
+                final_state, "execution", "result_columns", default=[]
+            )
             column_infos = [
                 ColumnInfo(
                     name=col["name"] if isinstance(col, dict) else col,
-                    data_type=col.get("data_type", "unknown") if isinstance(col, dict) else "unknown",
-                    is_nullable=col.get("is_nullable", True) if isinstance(col, dict) else True,
+                    data_type=(
+                        col.get("data_type", "unknown")
+                        if isinstance(col, dict)
+                        else "unknown"
+                    ),
+                    is_nullable=(
+                        col.get("is_nullable", True) if isinstance(col, dict) else True
+                    ),
                 )
                 for col in result_columns
             ]
-            query_result = _get_nested_value(final_state, "execution", "query_result", default=[])
+            query_result = _get_nested_value(
+                final_state, "execution", "query_result", default=[]
+            )
+            total_row_count = _get_nested_value(
+                final_state, "execution", "total_row_count", default=0
+            )
             return ConfirmationResponse(
                 success=True,
                 result=QueryResultData(
                     rows=query_result,
-                    total_row_count=_get_nested_value(final_state, "execution", "total_row_count", default=0),
+                    total_row_count=total_row_count,
                     returned_row_count=len(query_result),
                     columns=column_infos,
-                    is_truncated=False,
-                    execution_time_ms=_get_nested_value(final_state, "execution", "execution_time_ms", default=0),
+                    is_truncated=len(query_result) < total_row_count,
+                    execution_time_ms=_get_nested_value(
+                        final_state, "execution", "execution_time_ms", default=0
+                    ),
                 ),
                 error=None,
             )
