@@ -214,6 +214,67 @@ class Text2SQLAgentState(TypedDict):
     """대화 히스토리 (add_messages 리듀서로 자동 누적)"""
 
 
+# === State Update Helpers ===
+# LangGraph의 Nested TypedDict는 deep merge가 아닌 replace(전체 교체) 방식으로 동작합니다.
+# 아래 헬퍼 함수들은 현재 상태 값을 유지하면서 특정 필드만 안전하게 업데이트합니다.
+
+
+def update_execution(state: "Text2SQLAgentState", **overrides) -> ExecutionResult:
+    """execution 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("execution", {})
+    return {
+        "query_result": current.get("query_result", []),
+        "result_columns": current.get("result_columns", []),
+        "total_row_count": current.get("total_row_count", 0),
+        "execution_time_ms": current.get("execution_time_ms", 0),
+        "execution_error": current.get("execution_error", None),
+        **overrides,
+    }
+
+
+def update_response(state: "Text2SQLAgentState", **overrides) -> ResponseOutput:
+    """response 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("response", {})
+    return {
+        "user_approved": current.get("user_approved", None),
+        "final_response": current.get("final_response", ""),
+        "response_format": current.get("response_format", "table"),
+        **overrides,
+    }
+
+
+def update_generation(state: "Text2SQLAgentState", **overrides) -> QueryGeneration:
+    """generation 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("generation", {})
+    return {
+        "generated_query": current.get("generated_query", ""),
+        "query_explanation": current.get("query_explanation", ""),
+        "generation_attempt": current.get("generation_attempt", 0),
+        "query_id": current.get("query_id", ""),
+        **overrides,
+    }
+
+
+def update_validation(state: "Text2SQLAgentState", **overrides) -> ValidationResult:
+    """validation 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("validation", {})
+    return {
+        "validation_errors": current.get("validation_errors", []),
+        "is_query_valid": current.get("is_query_valid", False),
+        **overrides,
+    }
+
+
+def update_schema(state: "Text2SQLAgentState", **overrides) -> SchemaContext:
+    """schema 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("schema", {})
+    return {
+        "database_schema": current.get("database_schema", ""),
+        "relevant_tables": current.get("relevant_tables", []),
+        **overrides,
+    }
+
+
 # === Helper Functions ===
 
 

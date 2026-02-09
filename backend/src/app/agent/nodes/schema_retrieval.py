@@ -8,7 +8,7 @@
 import logging
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_execution, update_schema
 from app.database.schema import format_schema_for_llm, get_database_schema
 from app.models.entities import DatabaseSchema
 
@@ -78,13 +78,8 @@ async def schema_retrieval_node(state: Text2SQLAgentState) -> dict[str, object]:
         if accessible_tables and len(schema.tables) == 0:
             logger.warning("접근 가능한 테이블이 없음 - 권한 부족")
             return {
-                "schema": {
-                    "database_schema": "",
-                    "relevant_tables": [],
-                },
-                "execution": {
-                    "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
-                },
+                "schema": update_schema(state, database_schema="", relevant_tables=[]),
+                "execution": update_execution(state, execution_error="접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다."),
             }
 
         # LLM 프롬프트용 문자열로 변환
@@ -96,20 +91,12 @@ async def schema_retrieval_node(state: Text2SQLAgentState) -> dict[str, object]:
         logger.info(f"스키마 조회 완료 - {len(table_names)}개 테이블")
 
         return {
-            "schema": {
-                "database_schema": schema_str,
-                "relevant_tables": table_names,
-            },
+            "schema": update_schema(state, database_schema=schema_str, relevant_tables=table_names),
         }
 
     except Exception as e:
         logger.error(f"스키마 조회 실패: {e}", exc_info=True)
         return {
-            "schema": {
-                "database_schema": "",
-                "relevant_tables": [],
-            },
-            "execution": {
-                "execution_error": "스키마를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.",
-            },
+            "schema": update_schema(state, database_schema="", relevant_tables=[]),
+            "execution": update_execution(state, execution_error="스키마를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."),
         }

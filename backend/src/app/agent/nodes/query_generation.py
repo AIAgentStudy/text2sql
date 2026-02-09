@@ -12,7 +12,7 @@ import uuid
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_response
 from app.config import get_settings
 from app.errors.messages import get_ambiguous_query_help, is_ambiguous_query
 from app.llm.factory import get_chat_model
@@ -360,14 +360,8 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     if accessible_tables is not None and len(accessible_tables) == 0:
         logger.warning("접근 가능한 테이블이 없음 - LLM 호출 생략")
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다."),
         }
 
     logger.info(f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})")
@@ -376,18 +370,9 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     if is_reset_command(user_question):
         logger.info("리셋 명령어 감지 - 세션 초기화")
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": None,
-            },
-            "response": {
-                "final_response": "대화가 초기화되었습니다. 새로운 질문을 해주세요.",
-                "response_format": "summary",
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=None),
+            "response": update_response(state, final_response="대화가 초기화되었습니다. 새로운 질문을 해주세요.", response_format="summary"),
             # 메시지 히스토리 초기화는 세션 매니저에서 처리
         }
 
@@ -398,14 +383,8 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     if has_context_reference and not message_history:
         logger.info("맥락 참조 있으나 히스토리 없음")
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": "이전 대화 내용이 없습니다. 먼저 조회할 데이터를 알려주세요.\n\n예: '지난달 매출을 보여줘'",
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="이전 대화 내용이 없습니다. 먼저 조회할 데이터를 알려주세요.\n\n예: '지난달 매출을 보여줘'"),
         }
 
     # 모호한 쿼리 감지 (맥락 참조가 없는 경우에만)
@@ -413,28 +392,16 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         logger.info("모호한 쿼리 감지")
         help_text = get_ambiguous_query_help()
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": help_text,
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=help_text),
         }
 
     # 최대 시도 횟수 확인
     if attempt > settings.max_generation_attempts:
         logger.warning(f"최대 생성 시도 횟수 초과: {attempt}")
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": "쿼리를 생성할 수 없습니다. 질문을 다시 확인해주세요.",
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="쿼리를 생성할 수 없습니다. 질문을 다시 확인해주세요."),
         }
     try:
         # LLM 모델 가져오기 (state에서 선택한 provider 사용)
@@ -473,14 +440,8 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         if not sql_query:
             logger.warning("SQL 쿼리 파싱 실패")
             return {
-                "generation": {
-                    "generation_attempt": attempt,
-                    "generated_query": "",
-                    "query_explanation": "",
-                },
-                "execution": {
-                    "execution_error": "쿼리를 생성하지 못했습니다.",
-                },
+                "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+                "execution": update_execution(state, execution_error="쿼리를 생성하지 못했습니다."),
             }
 
         # 쿼리 ID 생성
@@ -494,29 +455,16 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         updated_messages.append(AIMessage(content=response_text))
 
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": sql_query,
-                "query_explanation": explanation,
-                "query_id": query_id,
-            },
-            "execution": {
-                "execution_error": None,
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query=sql_query, query_explanation=explanation, query_id=query_id),
+            "execution": update_execution(state, execution_error=None),
             "messages": updated_messages,
         }
 
     except Exception as e:
         logger.error(f"쿼리 생성 실패: {e}")
         return {
-            "generation": {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-            },
-            "execution": {
-                "execution_error": f"쿼리 생성 중 오류가 발생했습니다: {e}",
-            },
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=f"쿼리 생성 중 오류가 발생했습니다: {e}"),
         }
 
 

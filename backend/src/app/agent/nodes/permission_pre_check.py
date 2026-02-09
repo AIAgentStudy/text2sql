@@ -10,7 +10,7 @@ import logging
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_execution
 from app.database.schema import get_database_schema
 from app.llm.factory import get_fast_model
 
@@ -125,9 +125,7 @@ async def permission_pre_check_node(state: Text2SQLAgentState) -> dict[str, obje
                 f"roles={user_roles}, question={user_question[:100]}"
             )
             return {
-                "execution": {
-                    "execution_error": "해당 데이터에 대한 접근 권한이 없습니다. 관리자에게 문의하세요.",
-                },
+                "execution": update_execution(state, execution_error="해당 데이터에 대한 접근 권한이 없습니다. 관리자에게 문의하세요."),
             }
 
         # NO 또는 기타 응답 → 통과

@@ -15,7 +15,7 @@ from typing import Literal
 from langchain_core.language_models import BaseChatModel
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_validation
 from app.database.schema import get_database_schema
 from app.errors.exceptions import DangerousQueryError, QueryValidationError
 from app.llm.factory import get_llm
@@ -182,10 +182,7 @@ async def query_validation_node(
     if not generated_query:
         logger.warning("검증할 쿼리 없음")
         return {
-            "validation": {
-                "is_query_valid": False,
-                "validation_errors": ["쿼리가 생성되지 않았습니다."],
-            },
+            "validation": update_validation(state, is_query_valid=False, validation_errors=["쿼리가 생성되지 않았습니다."]),
         }
 
     try:
@@ -219,19 +216,11 @@ async def query_validation_node(
                 if unauthorized:
                     logger.warning(f"권한 없는 테이블 접근 시도: {unauthorized}")
                     return {
-                        "validation": {
-                            "is_query_valid": False,
-                            "validation_errors": [
-                                f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}"
-                            ],
-                        },
+                        "validation": update_validation(state, is_query_valid=False, validation_errors=[f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}"]),
                     }
 
             return {
-                "validation": {
-                    "is_query_valid": True,
-                    "validation_errors": [],
-                },
+                "validation": update_validation(state, is_query_valid=True, validation_errors=[]),
             }
         else:
             # 검증 실패
@@ -253,51 +242,29 @@ async def query_validation_node(
                     error_messages.append("힌트: 더 간단하고 명확한 쿼리를 생성하세요.")
 
             return {
-                "validation": {
-                    "is_query_valid": False,
-                    "validation_errors": error_messages,
-                },
-                "generation": {
-                    "generation_attempt": generation_attempt + 1,
-                },
+                "validation": update_validation(state, is_query_valid=False, validation_errors=error_messages),
+                "generation": update_generation(state, generation_attempt=generation_attempt + 1),
             }
 
     except DangerousQueryError as e:
         logger.warning(f"위험한 쿼리 감지: {e}")
         return {
-            "validation": {
-                "is_query_valid": False,
-                "validation_errors": [e.user_message],
-            },
-            "execution": {
-                "execution_error": e.user_message,
-            },
+            "validation": update_validation(state, is_query_valid=False, validation_errors=[e.user_message]),
+            "execution": update_execution(state, execution_error=e.user_message),
         }
 
     except QueryValidationError as e:
         logger.warning(f"쿼리 검증 오류: {e}")
         return {
-            "validation": {
-                "is_query_valid": False,
-                "validation_errors": [e.user_message],
-            },
-            "generation": {
-                "generation_attempt": generation_attempt + 1,
-            },
+            "validation": update_validation(state, is_query_valid=False, validation_errors=[e.user_message]),
+            "generation": update_generation(state, generation_attempt=generation_attempt + 1),
         }
 
     except Exception as e:
         logger.error(f"쿼리 검증 중 예외 발생: {e}", exc_info=True)
         return {
-            "validation": {
-                "is_query_valid": False,
-                "validation_errors": [
-                    "쿼리 검증 중 문제가 발생했습니다. 다시 시도해주세요."
-                ],
-            },
-            "generation": {
-                "generation_attempt": generation_attempt + 1,
-            },
+            "validation": update_validation(state, is_query_valid=False, validation_errors=["쿼리 검증 중 문제가 발생했습니다. 다시 시도해주세요."]),
+            "generation": update_generation(state, generation_attempt=generation_attempt + 1),
         }
 
 

@@ -11,7 +11,7 @@ from typing import Literal
 from langgraph.types import interrupt
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_response, update_validation
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -40,9 +40,7 @@ async def user_confirmation_node(
     if settings.auto_confirm_queries:
         logger.info("자동 확인 모드: 쿼리 자동 승인")
         return {
-            "response": {
-                "user_approved": True,
-            },
+            "response": update_response(state, user_approved=True),
         }
 
     # Nested 구조에서 값 추출
@@ -105,32 +103,22 @@ def handle_user_response(
     if approved:
         logger.info("사용자가 쿼리 실행을 승인함")
         result: dict[str, object] = {
-            "response": {
-                "user_approved": True,
-            },
+            "response": update_response(state, user_approved=True),
         }
 
         # 수정된 쿼리가 있으면 업데이트
         if modified_query:
             logger.info(f"수정된 쿼리로 변경: {modified_query[:50]}...")
-            result["generation"] = {
-                "generated_query": modified_query,
-            }
+            result["generation"] = update_generation(state, generated_query=modified_query)
             # 수정된 쿼리는 재검증 필요
-            result["validation"] = {
-                "is_query_valid": False,
-            }
+            result["validation"] = update_validation(state, is_query_valid=False)
 
         return result
     else:
         logger.info("사용자가 쿼리 실행을 거부함")
         return {
-            "response": {
-                "user_approved": False,
-            },
-            "execution": {
-                "execution_error": "사용자가 쿼리 실행을 취소했습니다.",
-            },
+            "response": update_response(state, user_approved=False),
+            "execution": update_execution(state, execution_error="사용자가 쿼리 실행을 취소했습니다."),
         }
 
 

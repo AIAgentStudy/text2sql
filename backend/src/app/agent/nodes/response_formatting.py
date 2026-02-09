@@ -7,7 +7,7 @@
 import logging
 
 from app.agent.decorators import with_debug_timing
-from app.agent.state import Text2SQLAgentState
+from app.agent.state import Text2SQLAgentState, update_response
 from app.errors.messages import (
     ErrorCode,
     get_error_message,
@@ -31,68 +31,68 @@ async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, objec
     Returns:
         업데이트할 상태 딕셔너리
     """
-    # Nested 구조에서 값 추출
-    response_format = state["response"]["response_format"]
+    # Nested 구조에서 값 추출 (방어적 접근)
+    response_format = state["response"].get("response_format", "table")
 
     logger.info(f"응답 포맷팅 - 형식: {response_format}")
 
     # 사용자가 취소한 경우
-    if state["response"]["user_approved"] is False:
+    if state["response"].get("user_approved") is False:
         return {
-            "response": {
-                "final_response": _format_cancelled_response(),
-                "response_format": "summary",
-            },
+            "response": update_response(state, final_response=_format_cancelled_response(), response_format="summary"),
         }
 
     # 에러 응답
-    execution_error = state["execution"]["execution_error"]
+    execution_error = state["execution"].get("execution_error")
     if response_format == "error" or execution_error:
-        validation_errors = state["validation"]["validation_errors"]
+        validation_errors = state["validation"].get("validation_errors", [])
         user_question = state["input"]["user_question"]
 
         return {
-            "response": {
-                "final_response": _format_error_response(
+            "response": update_response(
+                state,
+                final_response=_format_error_response(
                     execution_error or "",
                     validation_errors,
                     user_question,
                 ),
-                "response_format": "error",
-            },
+                response_format="error",
+            ),
         }
 
     # 빈 결과 응답
-    total_count = state["execution"]["total_row_count"]
+    total_count = state["execution"].get("total_row_count", 0)
     if total_count == 0:
         user_question = state["input"]["user_question"]
         generated_query = state["generation"]["generated_query"]
         return {
-            "response": {
-                "final_response": _format_empty_response(
+            "response": update_response(
+                state,
+                final_response=_format_empty_response(
                     user_question,
                     generated_query,
                 ),
-                "response_format": "summary",
-            },
+                response_format="summary",
+            ),
         }
 
     # 테이블 형식 응답
-    rows = state["execution"]["query_result"]
-    raw_columns = state["execution"]["result_columns"]
+    rows = state["execution"].get("query_result", [])
+    raw_columns = state["execution"].get("result_columns", [])
     columns = [col["name"] if isinstance(col, dict) else col for col in (raw_columns or [])]
-    execution_time = state["execution"]["execution_time_ms"]
+    execution_time = state["execution"].get("execution_time_ms", 0)
 
     return {
-        "response": {
-            "final_response": _format_table_response(
+        "response": update_response(
+            state,
+            final_response=_format_table_response(
                 rows=rows,
                 columns=columns,
                 total_count=total_count,
                 execution_time=execution_time,
             ),
-            "response_format": "table",
-        },
+            response_format="table",
+        ),
     }
 
 
