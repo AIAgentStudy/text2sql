@@ -15,6 +15,8 @@ interface MessageListProps {
   messages: ChatMessage[];
   /** 쿼리 승인 핸들러 */
   onApproveQuery?: (queryId: string) => void;
+  /** 쿼리 거부 핸들러 */
+  onRejectQuery?: (queryId: string) => void;
   /** 로딩 상태 */
   isLoading?: boolean;
   /** 현재 상태 */
@@ -28,6 +30,7 @@ interface MessageListProps {
 export function MessageList({
   messages,
   onApproveQuery,
+  onRejectQuery,
   isLoading = false,
   currentStatus,
   onExampleSelect,
@@ -253,6 +256,7 @@ export function MessageList({
                         query={message.queryPreview.query}
                         explanation={message.queryPreview.explanation}
                         onApprove={onApproveQuery}
+                        onReject={onRejectQuery}
                         isLoading={isLoading}
                       />
                     </div>

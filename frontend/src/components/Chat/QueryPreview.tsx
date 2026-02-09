@@ -14,6 +14,8 @@ interface QueryPreviewProps {
   explanation: string;
   /** 실행 버튼 클릭 핸들러 */
   onApprove: (queryId: string) => void;
+  /** 취소 버튼 클릭 핸들러 */
+  onReject?: (queryId: string) => void;
   /** 로딩 상태 */
   isLoading?: boolean;
 }
@@ -23,10 +25,15 @@ export function QueryPreview({
   query,
   explanation,
   onApprove,
+  onReject,
   isLoading = false,
 }: QueryPreviewProps) {
   const handleApprove = () => {
     onApprove(queryId);
+  };
+
+  const handleReject = () => {
+    onReject?.(queryId);
   };
 
   return (
@@ -52,7 +59,16 @@ export function QueryPreview({
       </div>
 
       {/* 액션 버튼 */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {onReject && (
+          <button
+            onClick={handleReject}
+            disabled={isLoading}
+            className="btn-ghost text-content-secondary hover:text-red-400 hover:bg-red-500/10"
+          >
+            취소
+          </button>
+        )}
         <button
           onClick={handleApprove}
           disabled={isLoading}

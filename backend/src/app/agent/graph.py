@@ -33,7 +33,8 @@ def should_continue_after_schema(
 
     스키마 조회 중 에러(권한 부족 등)가 발생하면 즉시 응답 포맷팅으로 이동
     """
-    if state.get("execution_error"):
+    # Nested 구조에서 execution_error 접근
+    if state["execution"]["execution_error"]:
         return "format_error"
     return "generate"
 
@@ -46,7 +47,8 @@ def should_continue_after_permission_check(
 
     권한 위반이 감지되면 즉시 응답 포맷팅으로 이동
     """
-    if state.get("execution_error"):
+    # Nested 구조에서 execution_error 접근
+    if state["execution"]["execution_error"]:
         return "format_error"
     return "generate"
 
@@ -59,7 +61,11 @@ def should_continue_after_generation(
 
     쿼리가 성공적으로 생성되었으면 검증, 아니면 에러 포맷팅으로 이동
     """
-    if state.get("execution_error") or not state.get("generated_query"):
+    # Nested 구조에서 값 접근
+    execution_error = state["execution"]["execution_error"]
+    generated_query = state["generation"]["generated_query"]
+
+    if execution_error or not generated_query:
         return "format_error"
     return "validate"
 
@@ -74,8 +80,9 @@ def should_continue_after_validation(
     - 재시도 가능하면 재생성
     - 최대 재시도 초과 시 에러 포맷팅
     """
-    is_valid = state.get("is_query_valid", False)
-    attempt = state.get("generation_attempt", 0)
+    # Nested 구조에서 값 접근
+    is_valid = state["validation"]["is_query_valid"]
+    attempt = state["generation"]["generation_attempt"]
 
     if is_valid:
         return "confirm"
@@ -100,11 +107,13 @@ def should_continue_after_confirmation(
     - 수정된 쿼리가 있으면 재검증
     - 거부되면 취소 포맷팅
     """
-    user_approved = state.get("user_approved")
+    # Nested 구조에서 값 접근
+    user_approved = state["response"]["user_approved"]
+    is_query_valid = state["validation"]["is_query_valid"]
 
     if user_approved is True:
         # 수정된 쿼리가 있고 재검증이 필요한 경우
-        if state.get("is_query_valid") is False:
+        if is_query_valid is False:
             return "revalidate"
         return "execute"
 

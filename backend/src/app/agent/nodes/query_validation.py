@@ -14,7 +14,8 @@ from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 
-from app.agent.state import Text2SQLAgentState
+from app.agent.decorators import with_debug_timing
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_validation
 from app.database.schema import get_database_schema
 from app.errors.exceptions import DangerousQueryError, QueryValidationError
 from app.llm.factory import get_llm
@@ -77,9 +78,7 @@ async def validate_query_pipeline(
     keyword_result = keyword_validator.validate(query)
 
     if not keyword_result.is_valid:
-        logger.warning(
-            f"키워드 검증 실패: {keyword_result.detected_keywords}"
-        )
+        logger.warning(f"키워드 검증 실패: {keyword_result.detected_keywords}")
         return ValidationPipelineResult(
             is_valid=False,
             blocked_at_layer="keyword",
@@ -155,6 +154,7 @@ async def validate_query_pipeline(
     )
 
 
+@with_debug_timing("query_validation")
 async def query_validation_node(
     state: Text2SQLAgentState,
 ) -> dict[str, object]:
@@ -170,8 +170,9 @@ async def query_validation_node(
     Returns:
         업데이트된 상태 필드
     """
-    generated_query = state.get("generated_query", "")
-    generation_attempt = state.get("generation_attempt", 0)
+    # Nested 구조에서 값 추출
+    generated_query = state["generation"]["generated_query"]
+    generation_attempt = state["generation"]["generation_attempt"]
 
     logger.info(
         f"쿼리 검증 노드 실행 (시도 {generation_attempt}/{MAX_VALIDATION_RETRIES})"
@@ -181,8 +182,7 @@ async def query_validation_node(
     if not generated_query:
         logger.warning("검증할 쿼리 없음")
         return {
-            "is_query_valid": False,
-            "validation_errors": ["쿼리가 생성되지 않았습니다."],
+            "validation": update_validation(state, is_query_valid=False, validation_errors=["쿼리가 생성되지 않았습니다."]),
         }
 
     try:
@@ -191,7 +191,7 @@ async def query_validation_node(
 
         # LLM 가져오기 (시맨틱 검증용)
         # 빠른 모델 사용, state에서 선택한 provider 사용
-        llm_provider = state.get("llm_provider", "openai")
+        llm_provider = state["input"]["llm_provider"]
         llm = get_llm(provider_type=llm_provider, use_fast_model=True)
 
         # 검증 파이프라인 실행
@@ -204,7 +204,7 @@ async def query_validation_node(
 
         if result.is_valid:
             # 권한 검증: accessible_tables에 포함되지 않은 테이블 참조 차단
-            accessible_tables = state.get("accessible_tables", [])
+            accessible_tables = state["auth"]["accessible_tables"]
             if accessible_tables:
                 from app.auth.permissions import extract_tables_from_query
 
@@ -214,19 +214,13 @@ async def query_validation_node(
                     t for t in referenced_tables if t.lower() not in accessible_lower
                 ]
                 if unauthorized:
-                    logger.warning(
-                        f"권한 없는 테이블 접근 시도: {unauthorized}"
-                    )
+                    logger.warning(f"권한 없는 테이블 접근 시도: {unauthorized}")
                     return {
-                        "is_query_valid": False,
-                        "validation_errors": [
-                            f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}"
-                        ],
+                        "validation": update_validation(state, is_query_valid=False, validation_errors=[f"접근 권한이 없는 테이블이 포함되어 있습니다: {', '.join(unauthorized)}"]),
                     }
 
             return {
-                "is_query_valid": True,
-                "validation_errors": [],
+                "validation": update_validation(state, is_query_valid=True, validation_errors=[]),
             }
         else:
             # 검증 실패
@@ -245,38 +239,32 @@ async def query_validation_node(
                         f"오류: {result.details}"
                     )
                 elif result.blocked_at_layer == "semantic":
-                    error_messages.append(
-                        "힌트: 더 간단하고 명확한 쿼리를 생성하세요."
-                    )
+                    error_messages.append("힌트: 더 간단하고 명확한 쿼리를 생성하세요.")
 
             return {
-                "is_query_valid": False,
-                "validation_errors": error_messages,
-                "generation_attempt": generation_attempt + 1,
+                "validation": update_validation(state, is_query_valid=False, validation_errors=error_messages),
+                "generation": update_generation(state, generation_attempt=generation_attempt + 1),
             }
 
     except DangerousQueryError as e:
         logger.warning(f"위험한 쿼리 감지: {e}")
         return {
-            "is_query_valid": False,
-            "validation_errors": [e.user_message],
-            "execution_error": e.user_message,
+            "validation": update_validation(state, is_query_valid=False, validation_errors=[e.user_message]),
+            "execution": update_execution(state, execution_error=e.user_message),
         }
 
     except QueryValidationError as e:
         logger.warning(f"쿼리 검증 오류: {e}")
         return {
-            "is_query_valid": False,
-            "validation_errors": [e.user_message],
+            "validation": update_validation(state, is_query_valid=False, validation_errors=[e.user_message]),
+            "generation": update_generation(state, generation_attempt=generation_attempt + 1),
         }
 
     except Exception as e:
         logger.error(f"쿼리 검증 중 예외 발생: {e}", exc_info=True)
         return {
-            "is_query_valid": False,
-            "validation_errors": [
-                "쿼리 검증 중 문제가 발생했습니다. 다시 시도해주세요."
-            ],
+            "validation": update_validation(state, is_query_valid=False, validation_errors=["쿼리 검증 중 문제가 발생했습니다. 다시 시도해주세요."]),
+            "generation": update_generation(state, generation_attempt=generation_attempt + 1),
         }
 
 
@@ -290,8 +278,8 @@ def should_retry_generation(state: Text2SQLAgentState) -> bool:
     Returns:
         재생성 필요 여부
     """
-    is_valid = state.get("is_query_valid", False)
-    attempt = state.get("generation_attempt", 0)
+    is_valid = state["validation"]["is_query_valid"]
+    attempt = state["generation"]["generation_attempt"]
 
     if is_valid:
         return False

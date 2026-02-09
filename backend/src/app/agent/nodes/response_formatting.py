@@ -6,7 +6,8 @@
 
 import logging
 
-from app.agent.state import Text2SQLAgentState
+from app.agent.decorators import with_debug_timing
+from app.agent.state import Text2SQLAgentState, update_response
 from app.errors.messages import (
     ErrorCode,
     get_error_message,
@@ -17,6 +18,7 @@ from app.errors.messages import (
 logger = logging.getLogger(__name__)
 
 
+@with_debug_timing("response_formatting")
 async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, object]:
     """
     응답 포맷팅 노드
@@ -29,56 +31,68 @@ async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, objec
     Returns:
         업데이트할 상태 딕셔너리
     """
-    response_format = state.get("response_format", "table")
+    # Nested 구조에서 값 추출 (방어적 접근)
+    response_format = state["response"].get("response_format", "table")
 
     logger.info(f"응답 포맷팅 - 형식: {response_format}")
 
     # 사용자가 취소한 경우
-    if state.get("user_approved") is False:
+    if state["response"].get("user_approved") is False:
         return {
-            "final_response": _format_cancelled_response(),
-            "response_format": "summary",
+            "response": update_response(state, final_response=_format_cancelled_response(), response_format="summary"),
         }
 
     # 에러 응답
-    if response_format == "error" or state.get("execution_error"):
-        error_message = state.get("execution_error", "")
-        validation_errors = state.get("validation_errors", [])
+    execution_error = state["execution"].get("execution_error")
+    if response_format == "error" or execution_error:
+        validation_errors = state["validation"].get("validation_errors", [])
+        user_question = state["input"]["user_question"]
 
         return {
-            "final_response": _format_error_response(
-                error_message,
-                validation_errors,
-                state.get("user_question", ""),
+            "response": update_response(
+                state,
+                final_response=_format_error_response(
+                    execution_error or "",
+                    validation_errors,
+                    user_question,
+                ),
+                response_format="error",
             ),
-            "response_format": "error",
         }
 
     # 빈 결과 응답
-    total_count = state.get("total_row_count", 0)
+    total_count = state["execution"].get("total_row_count", 0)
     if total_count == 0:
+        user_question = state["input"]["user_question"]
+        generated_query = state["generation"]["generated_query"]
         return {
-            "final_response": _format_empty_response(
-                state.get("user_question", ""),
-                state.get("generated_query", ""),
+            "response": update_response(
+                state,
+                final_response=_format_empty_response(
+                    user_question,
+                    generated_query,
+                ),
+                response_format="summary",
             ),
-            "response_format": "summary",
         }
 
     # 테이블 형식 응답
-    rows = state.get("query_result", [])
-    raw_columns = state.get("result_columns", [])
-    columns = [col["name"] if isinstance(col, dict) else col for col in raw_columns]
-    execution_time = state.get("execution_time_ms", 0)
+    rows = state["execution"].get("query_result", [])
+    raw_columns = state["execution"].get("result_columns", [])
+    columns = [col["name"] if isinstance(col, dict) else col for col in (raw_columns or [])]
+    execution_time = state["execution"].get("execution_time_ms", 0)
 
     return {
-        "final_response": _format_table_response(
-            rows=rows,
-            columns=columns,
-            total_count=total_count,
-            execution_time=execution_time,
+        "response": update_response(
+            state,
+            final_response=_format_table_response(
+                rows=rows,
+                columns=columns,
+                total_count=total_count,
+                execution_time=execution_time,
+            ),
+            response_format="table",
         ),
-        "response_format": "table",
     }
 
 
@@ -165,7 +179,9 @@ def _format_table_response(
 ) -> str:
     """테이블 형식 응답 포맷팅"""
     # 결과 요약
-    summary = f"조회 완료! {total_count:,}건의 데이터를 찾았습니다. ({execution_time}ms)"
+    summary = (
+        f"조회 완료! {total_count:,}건의 데이터를 찾았습니다. ({execution_time}ms)"
+    )
 
     # 마크다운 테이블 생성 (최대 10행만 미리보기)
     preview_rows = rows[:10]

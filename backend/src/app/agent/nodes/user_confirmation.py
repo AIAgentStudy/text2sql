@@ -10,12 +10,14 @@ from typing import Literal
 
 from langgraph.types import interrupt
 
-from app.agent.state import Text2SQLAgentState
+from app.agent.decorators import with_debug_timing
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_response, update_validation
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
+@with_debug_timing("user_confirmation")
 async def user_confirmation_node(
     state: Text2SQLAgentState,
 ) -> dict[str, object]:
@@ -38,12 +40,13 @@ async def user_confirmation_node(
     if settings.auto_confirm_queries:
         logger.info("자동 확인 모드: 쿼리 자동 승인")
         return {
-            "user_approved": True,
+            "response": update_response(state, user_approved=True),
         }
 
-    generated_query = state.get("generated_query", "")
-    query_explanation = state.get("query_explanation", "")
-    query_id = state.get("query_id", "")
+    # Nested 구조에서 값 추출
+    generated_query = state["generation"]["generated_query"]
+    query_explanation = state["generation"]["query_explanation"]
+    query_id = state["generation"]["query_id"]
 
     logger.info(f"사용자 확인 요청 - 쿼리 ID: {query_id}")
 
@@ -99,21 +102,23 @@ def handle_user_response(
 
     if approved:
         logger.info("사용자가 쿼리 실행을 승인함")
-        result: dict[str, object] = {"user_approved": True}
+        result: dict[str, object] = {
+            "response": update_response(state, user_approved=True),
+        }
 
         # 수정된 쿼리가 있으면 업데이트
         if modified_query:
             logger.info(f"수정된 쿼리로 변경: {modified_query[:50]}...")
-            result["generated_query"] = modified_query
+            result["generation"] = update_generation(state, generated_query=modified_query)
             # 수정된 쿼리는 재검증 필요
-            result["is_query_valid"] = False
+            result["validation"] = update_validation(state, is_query_valid=False)
 
         return result
     else:
         logger.info("사용자가 쿼리 실행을 거부함")
         return {
-            "user_approved": False,
-            "execution_error": "사용자가 쿼리 실행을 취소했습니다.",
+            "response": update_response(state, user_approved=False),
+            "execution": update_execution(state, execution_error="사용자가 쿼리 실행을 취소했습니다."),
         }
 
 
@@ -134,11 +139,11 @@ def should_wait_for_confirmation(state: Text2SQLAgentState) -> bool:
         return False
 
     # 이미 승인/거부된 경우
-    if state.get("user_approved") is not None:
+    if state["response"]["user_approved"] is not None:
         return False
 
     # 쿼리가 유효하지 않으면 확인 불필요
-    if not state.get("is_query_valid", False):
+    if not state["validation"]["is_query_valid"]:
         return False
 
     return True
@@ -161,7 +166,7 @@ def get_confirmation_status(
     if settings.auto_confirm_queries:
         return "not_required"
 
-    user_approved = state.get("user_approved")
+    user_approved = state["response"]["user_approved"]
 
     if user_approved is None:
         return "pending"

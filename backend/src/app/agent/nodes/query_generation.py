@@ -11,7 +11,8 @@ import uuid
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from app.agent.state import Text2SQLAgentState
+from app.agent.decorators import with_debug_timing
+from app.agent.state import Text2SQLAgentState, update_execution, update_generation, update_response
 from app.config import get_settings
 from app.errors.messages import get_ambiguous_query_help, is_ambiguous_query
 from app.llm.factory import get_chat_model
@@ -65,6 +66,66 @@ INNER JOIN orders o ON o.id = oi.order_id
 WHERE o.order_date >= DATE_TRUNC('month', CURRENT_DATE)
 GROUP BY p.id, p.name ORDER BY "판매수량" DESC LIMIT 5;
 ```
+
+질문: "카테고리별 매출 비중"
+```sql
+WITH category_sales AS (
+    SELECT c.name AS category, COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS sales
+    FROM categories c
+    LEFT JOIN products p ON p.category_id = c.id
+    LEFT JOIN order_items oi ON oi.product_id = p.id
+    GROUP BY c.id, c.name
+),
+total AS (
+    SELECT SUM(sales) AS total_sales FROM category_sales
+)
+SELECT cs.category AS "카테고리",
+       cs.sales AS "매출액",
+       ROUND(cs.sales * 100.0 / NULLIF(t.total_sales, 0), 2) AS "비중(%)"
+FROM category_sales cs CROSS JOIN total t
+ORDER BY cs.sales DESC;
+```
+
+질문: "월별 매출 증감률"
+```sql
+WITH monthly_sales AS (
+    SELECT DATE_TRUNC('month', order_date) AS month,
+           COALESCE(SUM(amount), 0) AS sales
+    FROM orders
+    WHERE order_date >= DATE_TRUNC('year', CURRENT_DATE)
+    GROUP BY DATE_TRUNC('month', order_date)
+)
+SELECT TO_CHAR(month, 'YYYY-MM') AS "월",
+       sales AS "매출액",
+       LAG(sales) OVER (ORDER BY month) AS "전월매출",
+       ROUND((sales - LAG(sales) OVER (ORDER BY month)) * 100.0
+             / NULLIF(LAG(sales) OVER (ORDER BY month), 0), 2) AS "증감률(%)"
+FROM monthly_sales
+ORDER BY month;
+```
+
+질문: "고객별 매출 순위와 누적 비율"
+```sql
+WITH customer_sales AS (
+    SELECT c.name AS customer, COALESCE(SUM(o.amount), 0) AS sales
+    FROM customers c LEFT JOIN orders o ON o.customer_id = c.id
+    GROUP BY c.id, c.name
+),
+ranked AS (
+    SELECT customer, sales,
+           RANK() OVER (ORDER BY sales DESC) AS rank,
+           SUM(sales) OVER () AS total_sales,
+           SUM(sales) OVER (ORDER BY sales DESC) AS cumulative_sales
+    FROM customer_sales
+)
+SELECT customer AS "고객",
+       sales AS "매출액",
+       rank AS "순위",
+       ROUND(cumulative_sales * 100.0 / NULLIF(total_sales, 0), 2) AS "누적비율(%)"
+FROM ranked
+WHERE sales > 0
+ORDER BY rank LIMIT 10;
+```
 """
 
 SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
@@ -84,6 +145,14 @@ SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문가입니다.
 10. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
 11. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
 12. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+13. 비율, 비중, 점유율 계산 시 CTE(WITH 절)를 사용하세요.
+    - 전체 합계를 먼저 계산한 뒤 CROSS JOIN으로 비율 산출
+    - 0 나누기 방지: ROUND(value * 100.0 / NULLIF(total, 0), 2)
+14. 증감률, 전월/전년 대비 계산 시 윈도우 함수 LAG를 사용하세요.
+    - LAG(column) OVER (ORDER BY date_column)
+15. 순위, 누적합, 이동평균 등 분석 시 윈도우 함수를 적극 활용하세요.
+    - RANK(), ROW_NUMBER(), SUM() OVER(), AVG() OVER()
+16. 복잡한 서브쿼리가 2개 이상 필요한 경우 CTE로 분리하여 가독성을 높이세요.
 
 {few_shot_examples}
 
@@ -125,6 +194,14 @@ CONTEXT_AWARE_SYSTEM_PROMPT = """당신은 PostgreSQL 데이터베이스 전문�
 9. 항상 명시적 JOIN 문법을 사용하세요 (INNER JOIN, LEFT JOIN). WHERE절 조인 금지.
 10. 집계 결과 컬럼에는 반드시 한국어 AS 별칭을 부여하세요 (예: SUM(amount) AS "총매출액").
 11. 집계 함수 사용 시 COALESCE로 NULL을 0 또는 기본값으로 처리하세요.
+12. 비율, 비중, 점유율 계산 시 CTE(WITH 절)를 사용하세요.
+    - 전체 합계를 먼저 계산한 뒤 CROSS JOIN으로 비율 산출
+    - 0 나누기 방지: ROUND(value * 100.0 / NULLIF(total, 0), 2)
+13. 증감률, 전월/전년 대비 계산 시 윈도우 함수 LAG를 사용하세요.
+    - LAG(column) OVER (ORDER BY date_column)
+14. 순위, 누적합, 이동평균 등 분석 시 윈도우 함수를 적극 활용하세요.
+    - RANK(), ROW_NUMBER(), SUM() OVER(), AVG() OVER()
+15. 복잡한 서브쿼리가 2개 이상 필요한 경우 CTE로 분리하여 가독성을 높이세요.
 
 {few_shot_examples}
 
@@ -257,6 +334,7 @@ def format_messages_for_llm(
     return messages
 
 
+@with_debug_timing("query_generation")
 async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     """
     쿼리 생성 노드
@@ -271,35 +349,30 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         업데이트할 상태 딕셔너리
     """
     settings = get_settings()
-    attempt = state.get("generation_attempt", 0) + 1
-    user_question = state["user_question"]
+
+    # Nested 구조에서 값 추출
+    attempt = state["generation"]["generation_attempt"] + 1
+    user_question = state["input"]["user_question"]
     message_history = state.get("messages", [])
 
     # 접근 가능한 테이블이 없으면 LLM 호출 없이 즉시 에러 반환 (이중 안전장치)
-    accessible_tables = state.get("accessible_tables", [])
+    accessible_tables = state["auth"]["accessible_tables"]
     if accessible_tables is not None and len(accessible_tables) == 0:
         logger.warning("접근 가능한 테이블이 없음 - LLM 호출 생략")
         return {
-            "generation_attempt": attempt,
-            "generated_query": "",
-            "query_explanation": "",
-            "execution_error": "접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다.",
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="접근 권한이 없습니다. 요청하신 데이터에 대한 조회 권한이 부여되지 않았습니다."),
         }
 
-    logger.info(
-        f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})"
-    )
+    logger.info(f"쿼리 생성 시작 - 질문: {user_question[:50]}... (시도 {attempt})")
 
     # 리셋 명령어 확인
     if is_reset_command(user_question):
         logger.info("리셋 명령어 감지 - 세션 초기화")
         return {
-            "generation_attempt": attempt,
-            "generated_query": "",
-            "query_explanation": "",
-            "execution_error": None,
-            "final_response": "대화가 초기화되었습니다. 새로운 질문을 해주세요.",
-            "response_format": "summary",
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=None),
+            "response": update_response(state, final_response="대화가 초기화되었습니다. 새로운 질문을 해주세요.", response_format="summary"),
             # 메시지 히스토리 초기화는 세션 매니저에서 처리
         }
 
@@ -310,10 +383,8 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
     if has_context_reference and not message_history:
         logger.info("맥락 참조 있으나 히스토리 없음")
         return {
-            "generation_attempt": attempt,
-            "generated_query": "",
-            "query_explanation": "",
-            "execution_error": "이전 대화 내용이 없습니다. 먼저 조회할 데이터를 알려주세요.\n\n예: '지난달 매출을 보여줘'",
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="이전 대화 내용이 없습니다. 먼저 조회할 데이터를 알려주세요.\n\n예: '지난달 매출을 보여줘'"),
         }
 
     # 모호한 쿼리 감지 (맥락 참조가 없는 경우에만)
@@ -321,36 +392,34 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         logger.info("모호한 쿼리 감지")
         help_text = get_ambiguous_query_help()
         return {
-            "generation_attempt": attempt,
-            "generated_query": "",
-            "query_explanation": "",
-            "execution_error": help_text,
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=help_text),
         }
 
     # 최대 시도 횟수 확인
     if attempt > settings.max_generation_attempts:
         logger.warning(f"최대 생성 시도 횟수 초과: {attempt}")
         return {
-            "generation_attempt": attempt,
-            "execution_error": "쿼리를 생성할 수 없습니다. 질문을 다시 확인해주세요.",
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error="쿼리를 생성할 수 없습니다. 질문을 다시 확인해주세요."),
         }
-
     try:
         # LLM 모델 가져오기 (state에서 선택한 provider 사용)
-        llm_provider = state.get("llm_provider", "openai")
+        llm_provider = state["input"]["llm_provider"]
         llm = get_chat_model(provider_type=llm_provider)
 
         # 맥락 인식 프롬프트 생성
+        database_schema = state["schema"]["database_schema"]
         if has_context_reference and message_history:
             logger.info("맥락 인식 모드로 쿼리 생성")
             system_prompt = build_context_aware_prompt(
                 current_question=user_question,
                 message_history=message_history,
-                schema=state["database_schema"],
+                schema=database_schema,
             )
         else:
             system_prompt = SYSTEM_PROMPT.format(
-                schema=state["database_schema"],
+                schema=database_schema,
                 few_shot_examples=FEW_SHOT_EXAMPLES,
             )
 
@@ -371,10 +440,8 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         if not sql_query:
             logger.warning("SQL 쿼리 파싱 실패")
             return {
-                "generation_attempt": attempt,
-                "generated_query": "",
-                "query_explanation": "",
-                "execution_error": "쿼리를 생성하지 못했습니다.",
+                "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+                "execution": update_execution(state, execution_error="쿼리를 생성하지 못했습니다."),
             }
 
         # 쿼리 ID 생성
@@ -388,21 +455,16 @@ async def query_generation_node(state: Text2SQLAgentState) -> dict[str, object]:
         updated_messages.append(AIMessage(content=response_text))
 
         return {
-            "generation_attempt": attempt,
-            "generated_query": sql_query,
-            "query_explanation": explanation,
-            "query_id": query_id,
-            "execution_error": None,
+            "generation": update_generation(state, generation_attempt=attempt, generated_query=sql_query, query_explanation=explanation, query_id=query_id),
+            "execution": update_execution(state, execution_error=None),
             "messages": updated_messages,
         }
 
     except Exception as e:
         logger.error(f"쿼리 생성 실패: {e}")
         return {
-            "generation_attempt": attempt,
-            "generated_query": "",
-            "query_explanation": "",
-            "execution_error": f"쿼리 생성 중 오류가 발생했습니다: {e}",
+            "generation": update_generation(state, generation_attempt=attempt, generated_query="", query_explanation=""),
+            "execution": update_execution(state, execution_error=f"쿼리 생성 중 오류가 발생했습니다: {e}"),
         }
 
 

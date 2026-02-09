@@ -56,6 +56,13 @@ export function ChatContainer({ llmProvider = "openai", onSelectResult }: ChatCo
     [confirmQuery],
   );
 
+  const handleRejectQuery = useCallback(
+    (queryId: string) => {
+      confirmQuery(queryId, false);
+    },
+    [confirmQuery],
+  );
+
   const handleExampleSelect = useCallback((example: string) => {
     setInputMessage(example);
   }, []);
@@ -124,6 +131,7 @@ export function ChatContainer({ llmProvider = "openai", onSelectResult }: ChatCo
         <MessageList
           messages={messages}
           onApproveQuery={handleApproveQuery}
+          onRejectQuery={handleRejectQuery}
           isLoading={isLoading}
           currentStatus={currentStatus}
           onExampleSelect={handleExampleSelect}

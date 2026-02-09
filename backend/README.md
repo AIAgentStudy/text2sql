@@ -238,27 +238,145 @@ data: {"type": "done", "awaiting_confirmation": false}
 └─────────────────┘
 ```
 
+### 노드 상세 설명
+
+#### 1. Permission Pre-check (권한 사전 검증)
+**파일**: `agent/nodes/permission_pre_check.py`
+
+Fail-Fast 패턴을 적용하여 권한 없는 요청을 워크플로우 초기에 차단합니다.
+- 사용자 역할(roles)에 따라 접근 가능한 테이블 목록 조회
+- 빠른 LLM 모델로 질문에서 필요한 테이블 추론
+- 접근 불가 테이블이 포함된 경우 즉시 에러 반환 (LLM 비용 절감)
+
+#### 2. Schema Retrieval (스키마 조회)
+**파일**: `agent/nodes/schema_retrieval.py`
+
+데이터베이스 스키마를 조회하고 권한 기반 필터링을 수행합니다.
+- PostgreSQL information_schema에서 테이블/컬럼 메타데이터 조회
+- 사용자 접근 가능 테이블만 포함하도록 필터링
+- LLM 프롬프트에 적합한 형식으로 스키마 포맷팅
+
+#### 3. Query Generation (쿼리 생성)
+**파일**: `agent/nodes/query_generation.py`
+
+LLM을 활용하여 자연어 질문을 SQL SELECT 쿼리로 변환합니다.
+- Few-shot 예시를 통한 일관된 쿼리 스타일 유도
+- 대화 맥락 참조 감지 ("그중에", "이전 결과에서" 등)
+- 맥락 인식 모드로 연속 질문 처리 지원
+- 모호한 질문 감지 및 명확화 요청
+
+#### 4. Query Validation (쿼리 검증)
+**파일**: `agent/nodes/query_validation.py`
+
+생성된 쿼리를 3단계 검증 파이프라인으로 검사합니다.
+- **1단계 키워드 검증**: 위험 키워드(UPDATE, DELETE 등) 패턴 매칭
+- **2단계 스키마 검증**: 참조된 테이블/컬럼 존재 여부 확인
+- **3단계 시맨틱 검증**: LLM으로 의도 분석 및 우회 시도 탐지
+- 검증 실패 시 힌트와 함께 재생성 트리거 (최대 3회)
+
+#### 5. User Confirmation (사용자 확인)
+**파일**: `agent/nodes/user_confirmation.py`
+
+Human-in-the-Loop 패턴으로 쿼리 실행 전 사용자 승인을 받습니다.
+- LangGraph `interrupt()` 함수로 워크플로우 일시 중단
+- 쿼리 미리보기와 설명을 프론트엔드에 전송
+- 사용자 승인/거부에 따라 `Command(resume)` 으로 워크플로우 재개
+
+#### 6. Query Execution (쿼리 실행)
+**파일**: `agent/nodes/query_execution.py`
+
+검증된 쿼리를 안전하게 실행합니다.
+- 최종 권한 검증 (Defense-in-Depth)
+- READ ONLY 트랜잭션으로 실행
+- 타임아웃 및 결과 행 수 제한 적용
+- 실행 시간 및 결과 메타데이터 수집
+
+#### 7. Response Formatting (응답 포맷팅)
+**파일**: `agent/nodes/response_formatting.py`
+
+실행 결과를 사용자 친화적인 형태로 변환합니다.
+- 결과 데이터를 Markdown 테이블로 포맷팅
+- 에러 상황별 한국어 안내 메시지 생성
+- 빈 결과, 타임아웃, 권한 오류 등 상황별 처리
+
+### 상태 전이 로직
+
+| 현재 노드 | 조건 | 다음 노드 |
+|----------|------|----------|
+| `permission_pre_check` | 권한 없음 | `response_formatting` (에러) |
+| `permission_pre_check` | 권한 있음 | `schema_retrieval` |
+| `schema_retrieval` | 스키마 조회 실패 | `response_formatting` (에러) |
+| `schema_retrieval` | 스키마 조회 성공 | `query_generation` |
+| `query_generation` | 최대 시도 초과 / 에러 | `response_formatting` (에러) |
+| `query_generation` | 쿼리 생성 성공 | `query_validation` |
+| `query_validation` | 검증 실패 & 재시도 가능 | `query_generation` |
+| `query_validation` | 검증 실패 & 재시도 불가 | `response_formatting` (에러) |
+| `query_validation` | 검증 성공 | `user_confirmation` |
+| `user_confirmation` | 사용자 거부 | `response_formatting` (취소) |
+| `user_confirmation` | 사용자 승인 | `query_execution` |
+| `query_execution` | 실행 실패 | `response_formatting` (에러) |
+| `query_execution` | 실행 성공 | `response_formatting` |
+
 ## 보안
 
 ### 쿼리 검증 3단계
 
-1. **키워드 검증** (`keyword_validator.py`)
-   - UPDATE, DELETE, INSERT, DROP, ALTER, TRUNCATE
-   - GRANT, REVOKE, CREATE, MODIFY, EXEC, EXECUTE
+생성된 SQL 쿼리는 실행 전 3단계 점진적 검증을 거칩니다. 각 단계에서 실패 시 즉시 반환하여 불필요한 검증 비용을 절감합니다.
 
-2. **스키마 검증** (`schema_validator.py`)
-   - 참조된 테이블/컬럼 존재 여부 확인
-   - information_schema 기반 검증
+#### 1단계: 키워드 검증 (`keyword_validator.py`)
+**목적**: 위험한 DML/DDL 문 조기 차단
+**시간 복잡도**: O(n) - 정규식 패턴 매칭
 
-3. **시맨틱 검증** (`semantic_validator.py`)
-   - LLM을 통한 의도 분석
-   - 우회 시도 탐지
+| 차단 키워드 | 위험 유형 |
+|------------|----------|
+| `UPDATE`, `DELETE`, `INSERT` | 데이터 변경 |
+| `DROP`, `ALTER`, `TRUNCATE` | 스키마 변경 |
+| `GRANT`, `REVOKE` | 권한 변경 |
+| `CREATE`, `MODIFY` | 객체 생성/수정 |
+| `EXEC`, `EXECUTE` | 프로시저 실행 |
+
+- CTE (`WITH ... AS`) 구문을 SELECT 문으로 올바르게 처리
+- 문자열 리터럴 내 키워드는 무시 (`'DELETE ME'` 허용)
+
+#### 2단계: 스키마 검증 (`schema_validator.py`)
+**목적**: 존재하지 않는 테이블/컬럼 참조 방지
+
+- `information_schema`에서 실제 테이블/컬럼 목록 조회
+- SQL 파싱으로 참조된 객체 추출
+- 존재하지 않는 객체 접근 시 명확한 에러 메시지 제공
+
+#### 3단계: 시맨틱 검증 (`semantic_validator.py`)
+**목적**: LLM을 활용한 우회 시도 탐지
+
+| 탐지 대상 | 예시 |
+|----------|------|
+| SQL Injection 시도 | `'; DROP TABLE users; --` |
+| 권한 우회 시도 | 다른 사용자 데이터 접근 |
+| 시스템 테이블 접근 | `pg_catalog`, `information_schema` 직접 쿼리 |
+| 의도적 복잡화 | 중첩 서브쿼리로 키워드 검증 우회 |
+
+- 빠른 패턴 검사 후 LLM 호출 (비용 최적화)
+- 빠른 모델(GPT-3.5, Gemini Flash 등) 사용
 
 ### 실행 제한
 
 - READ ONLY 트랜잭션 (`SET TRANSACTION READ ONLY`)
 - 쿼리 타임아웃 설정 (`statement_timeout`)
 - 결과 행 수 제한 (`LIMIT`)
+
+### Defense-in-Depth 설계
+
+워크플로우 전체에 걸쳐 다중 보안 레이어를 적용합니다:
+
+```
+1. Permission Pre-check  → 사용자 역할 기반 테이블 접근 제한
+2. Schema Retrieval      → 접근 가능 테이블만 LLM에 제공
+3. Query Validation      → 3단계 검증 파이프라인
+4. User Confirmation     → Human-in-the-Loop 승인
+5. Query Execution       → 최종 권한 재검증 + READ ONLY 실행
+```
+
+각 레이어는 이전 레이어가 실패할 수 있다고 가정하고 독립적으로 검증합니다.
 
 ## 환경 변수
 
