@@ -23,9 +23,11 @@ interface ChatContainerProps {
   llmProvider?: LLMProvider;
   /** 결과 선택 콜백 (우측 패널에 표시) */
   onSelectResult?: (result: QueryResultData, query: string) => void;
+  /** 초기화 콜백 */
+  onReset?: () => void;
 }
 
-export function ChatContainer({ llmProvider = "openai", onSelectResult }: ChatContainerProps) {
+export function ChatContainer({ llmProvider = "openai", onSelectResult, onReset }: ChatContainerProps) {
   const [selectedProvider, setSelectedProvider] =
     useState<LLMProvider>(llmProvider);
   const [inputMessage, setInputMessage] = useState("");
@@ -70,7 +72,8 @@ export function ChatContainer({ llmProvider = "openai", onSelectResult }: ChatCo
   const handleNewChat = useCallback(async () => {
     clearChat();
     await terminateSession();
-  }, [clearChat, terminateSession]);
+    onReset?.();
+  }, [clearChat, terminateSession, onReset]);
 
   return (
     <div className="flex h-full min-h-[500px] flex-col card overflow-hidden">
