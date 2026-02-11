@@ -7,7 +7,7 @@ Text2SQL 에이전트의 전체 워크플로우를 구성합니다.
 import logging
 from typing import Literal
 
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from app.agent.nodes.permission_pre_check import permission_pre_check_node
@@ -232,7 +232,7 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def compile_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
+def compile_graph(checkpointer: InMemorySaver | None = None) -> StateGraph:
     """
     Text2SQL 에이전트 그래프 컴파일
 
@@ -256,11 +256,11 @@ def compile_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
 
 
 # 기본 체크포인터로 컴파일된 그래프 (개발용)
-_default_checkpointer = MemorySaver()
+_default_checkpointer = InMemorySaver()
 default_graph = compile_graph(_default_checkpointer)
 
 
-def get_graph(checkpointer: MemorySaver | None = None) -> StateGraph:
+def get_graph(checkpointer: InMemorySaver | None = None) -> StateGraph:
     """
     그래프 인스턴스 반환
 

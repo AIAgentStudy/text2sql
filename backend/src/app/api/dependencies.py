@@ -10,7 +10,7 @@ from typing import Annotated
 import asyncpg
 from fastapi import Depends
 from langchain_core.language_models import BaseChatModel
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.config import Settings, get_settings
 from app.database.connection import get_pool
@@ -45,12 +45,12 @@ def get_llm(
     return get_chat_model(provider)
 
 
-def get_session_checkpointer() -> MemorySaver:
+def get_session_checkpointer() -> InMemorySaver:
     """
     세션 체크포인터 의존성
 
     Returns:
-        MemorySaver: LangGraph 체크포인터
+        InMemorySaver: LangGraph 체크포인터
     """
     return get_checkpointer()
 
@@ -58,7 +58,7 @@ def get_session_checkpointer() -> MemorySaver:
 # 타입 별칭
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DBPoolDep = Annotated[asyncpg.Pool, Depends(get_db_pool)]
-CheckpointerDep = Annotated[MemorySaver, Depends(get_session_checkpointer)]
+CheckpointerDep = Annotated[InMemorySaver, Depends(get_session_checkpointer)]
 
 
 def get_llm_for_provider(provider: ProviderType) -> BaseChatModel:

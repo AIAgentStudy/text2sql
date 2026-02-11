@@ -7,7 +7,7 @@ Human-in-the-Loop 흐름 통합 테스트
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
 from app.agent.graph import build_graph, compile_graph
