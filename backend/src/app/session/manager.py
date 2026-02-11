@@ -8,7 +8,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.config import get_settings
 from app.errors.exceptions import SessionExpiredError, SessionNotFoundError
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 _sessions: dict[str, ConversationSession] = {}
 
 # LangGraph 체크포인터
-_checkpointer = MemorySaver()
+_checkpointer = InMemorySaver()
 
 
-def get_checkpointer() -> MemorySaver:
+def get_checkpointer() -> InMemorySaver:
     """LangGraph 체크포인터 반환"""
     return _checkpointer
 
@@ -228,7 +228,7 @@ def cleanup_expired_sessions() -> int:
 
     for sid in expired_ids:
         del _sessions[sid]
-        # MemorySaver 체크포인트 정리 추가
+        # InMemorySaver 체크포인트 정리 추가
         try:
             _checkpointer.delete_thread(sid)
         except Exception as e:

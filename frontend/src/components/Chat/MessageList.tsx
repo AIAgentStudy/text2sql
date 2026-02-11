@@ -70,7 +70,7 @@ export function MessageList({
       bg: "bg-emerald-50",
       queries: [
         "각 창고별 현재 총 재고 수량은?",
-        "재고가 10개 이하인 상품 목록을 보여줘",
+        "재고가 가장 많은 상품 Top 5",
         "이번 달 입고된 재고 이력을 보여줘",
       ],
     },

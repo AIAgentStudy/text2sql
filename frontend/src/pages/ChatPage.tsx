@@ -33,6 +33,11 @@ export function ChatPage() {
     [],
   );
 
+  const handleReset = useCallback(() => {
+    setSelectedResult(null);
+    setSelectedQuery(null);
+  }, []);
+
   return (
     <div className="h-screen bg-gradient-dark flex flex-col overflow-hidden">
       {/* 헤더 */}
@@ -96,7 +101,7 @@ export function ChatPage() {
       <main className="flex-1 flex flex-row min-h-0">
         {/* 좌측: 채팅 사이드바 */}
         <div className="w-[45%] flex-shrink-0 border-r border-surface-border flex flex-col">
-          <ChatContainer onSelectResult={handleSelectResult} />
+          <ChatContainer onSelectResult={handleSelectResult} onReset={handleReset} />
         </div>
 
         {/* 우측: 결과 패널 */}
