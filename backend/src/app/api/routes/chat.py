@@ -230,8 +230,23 @@ async def chat_endpoint(
                             )
                         )
                     )
+                elif response_format == "summary":
+                    # 요약/일반 응답인 경우 메시지로 전송
+                    yield _format_sse_event(
+                        StatusEvent(
+                            status=QueryRequestStatus.COMPLETED,
+                            message=final_response or "완료되었습니다.",
+                        )
+                    )
+                    
+                    # 어시스턴트 응답 저장
+                    add_message_to_session(
+                        session_id,
+                        "assistant",
+                        final_response or "",
+                    )
                 else:
-                    # 결과 이벤트
+                    # 결과 이벤트 (Table)
                     rows = _get_nested_value(
                         final_state, "execution", "query_result", default=[]
                     )

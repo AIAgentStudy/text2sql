@@ -20,9 +20,25 @@ from app.agent.nodes.query_validation import (
 from app.agent.nodes.response_formatting import response_formatting_node
 from app.agent.nodes.schema_retrieval import schema_retrieval_node
 from app.agent.nodes.user_confirmation import user_confirmation_node
+from app.agent.nodes.classification import classification_node
+from app.agent.nodes.general_response import general_response_node
 from app.agent.state import Text2SQLAgentState
 
 logger = logging.getLogger(__name__)
+
+
+def should_continue_after_classification(
+    state: Text2SQLAgentState,
+) -> Literal["text2sql", "general"]:
+    """
+    분류 후 다음 단계 결정
+
+    Text2SQL 쿼리는 권한 검사로, 일반 대화는 일반 응답 생성으로 이동
+    """
+    intent = state["input"].get("intent", "text2sql")
+    if intent == "general":
+        return "general"
+    return "text2sql"
 
 
 def should_continue_after_schema(
@@ -152,6 +168,8 @@ def build_graph() -> StateGraph:
     graph = StateGraph(Text2SQLAgentState)
 
     # 노드 추가
+    graph.add_node("classification", classification_node)
+    graph.add_node("general_response", general_response_node)
     graph.add_node("schema_retrieval", schema_retrieval_node)
     graph.add_node("permission_pre_check", permission_pre_check_node)
     graph.add_node("query_generation", query_generation_node)
@@ -161,8 +179,21 @@ def build_graph() -> StateGraph:
     graph.add_node("response_formatting", response_formatting_node)
 
     # 엣지 추가
-    # START → 권한 사전 검사 (Fail Fast: 권한 검사를 먼저 수행)
-    graph.add_edge(START, "permission_pre_check")
+    # START → 분류 노드 (Text2SQL vs General 판단)
+    graph.add_edge(START, "classification")
+
+    # 분류 노드 → 조건부 분기 (권한 검사 또는 일반 답변)
+    graph.add_conditional_edges(
+        "classification",
+        should_continue_after_classification,
+        {
+            "text2sql": "permission_pre_check",
+            "general": "general_response",
+        },
+    )
+
+    # 일반 답변 생성 → 응답 포맷팅
+    graph.add_edge("general_response", "response_formatting")
 
     # 권한 사전 검사 → 조건부 분기 (스키마 조회 또는 에러)
     graph.add_conditional_edges(

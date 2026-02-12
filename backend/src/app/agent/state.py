@@ -26,6 +26,9 @@ class InputContext(TypedDict):
     llm_provider: Literal["openai", "anthropic", "google"]
     """사용할 LLM 프로바이더"""
 
+    intent: Literal["text2sql", "general"] | None
+    """사용자 질문 의도"""
+
 
 class AuthContext(TypedDict):
     """인증 컨텍스트 - 사용자 권한 정보"""
@@ -232,6 +235,18 @@ def update_execution(state: "Text2SQLAgentState", **overrides) -> ExecutionResul
     }
 
 
+def update_input(state: "Text2SQLAgentState", **overrides) -> InputContext:
+    """input 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
+    current = state.get("input", {})
+    return {
+        "user_question": current.get("user_question", ""),
+        "session_id": current.get("session_id", ""),
+        "llm_provider": current.get("llm_provider", "openai"),
+        "intent": current.get("intent", None),
+        **overrides,
+    }
+
+
 def update_response(state: "Text2SQLAgentState", **overrides) -> ResponseOutput:
     """response 컨텍스트의 현재 값을 유지하면서 특정 필드만 업데이트"""
     current = state.get("response", {})
@@ -282,12 +297,14 @@ def create_initial_input(
     user_question: str,
     session_id: str,
     llm_provider: Literal["openai", "anthropic", "google"] = "openai",
+    intent: Literal["text2sql", "general"] | None = None,
 ) -> InputContext:
     """초기 입력 컨텍스트 생성"""
     return InputContext(
         user_question=user_question,
         session_id=session_id,
         llm_provider=llm_provider,
+        intent=intent,
     )
 
 
