@@ -60,6 +60,14 @@ async def response_formatting_node(state: Text2SQLAgentState) -> dict[str, objec
             ),
         }
 
+    # 일반/요약 응답이 이미 존재하고 에러가 없는 경우 (일반 대화)
+    # 이미 general_response_node에서 final_response를 설정했으므로 그대로 반환
+    final_response = state["response"].get("final_response")
+    if response_format == "summary" and final_response:
+        return {
+            "response": state["response"],  # 변경 없이 그대로 리턴
+        }
+
     # 빈 결과 응답
     total_count = state["execution"].get("total_row_count", 0)
     if total_count == 0:

@@ -262,16 +262,23 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               }
 
               // 최종 메시지 업데이트
-              updateMessage(assistantMessageId, {
-                content: queryResult
-                  ? `쿼리가 실행되었습니다. ${queryResult.returned_row_count}개의 결과가 있습니다.`
-                  : queryPreview
-                    ? queryPreview.explanation
-                    : '',
+              const contentUpdate = queryResult
+                ? `쿼리가 실행되었습니다. ${queryResult.returned_row_count}개의 결과가 있습니다.`
+                : queryPreview
+                  ? queryPreview.explanation
+                  : undefined; // 일반 대화의 경우 StatusEvent로 설정된 메시지 유지
+
+              const updates: Partial<ChatMessage> = {
                 queryPreview: queryPreview,
                 queryResult: queryResult,
                 isLoading: false,
-              });
+              };
+
+              if (contentUpdate !== undefined) {
+                updates.content = contentUpdate;
+              }
+
+              updateMessage(assistantMessageId, updates);
 
               setState((prev) => ({
                 ...prev,
